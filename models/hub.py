@@ -17,16 +17,12 @@ class ZoneType(str, Enum):
     PRIORITY = "priority"
 
 
-class Zone(BaseModel):
-    type: ZoneType = Field(default=ZoneType.NORMAL)
-
-
 class Hub(BaseModel):
     name: str
     x: int = Field(ge=0)
     y: int = Field(ge=0)
     color: Color = Field(default=Color.BLUE)
-    zone: Zone = Field(default=Zone(type=ZoneType.NORMAL))
-    max_drones: int = Field(ge=0)
+    zone_type: ZoneType = Field(default=ZoneType.NORMAL)
+    max_drones: int = Field(ge=0, default=1)
     start_hub: bool = Field(default=False)
     end_hub: bool = Field(default=False)
