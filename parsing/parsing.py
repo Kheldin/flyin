@@ -1,27 +1,37 @@
 import sys
 from models.map import Map, Drone, Connection, Hub
-from parsing.errors import ParsingError
+from parsing.errors import ParsingError, ArgumentError
 
+def parse_nb_drones(line: str, line_no: int) -> int:
+    line = line.replace(" ", "")
+    nb_drones = int(line.split(":")[1])
+    if not nb_drones > 0:
+        raise ParsingError(line_no, "nb_drones must be greater than 0")  
+    return (int(line.split(":")[1]))
 
 def parse_file() -> None:
     if (len(sys.argv) != 2):
-        raise ParsingError("Only one arg required: Path of the map")
+        raise ArgumentError("Only one arg required: Path of the map")
  
     with open(sys.argv[1]) as f:
-        file_content = f.read()
+        file_content = f.read().splitlines()
     
     drones: list[Drone]
     hubs: list[Hub]
     connections: list[Connection]
 
-    for line_nb, raw in enumerate(file_content.split('\n'), start=1):
+    # S'assurer que le premier keyword soit nb_drones
+    for line_nb, raw in enumerate(file_content, start=1):
         line = raw.strip()
         if not line or line.startswith("#"):
             continue
         keyword = line.split(':')[0].strip()
+        if line_nb == 1 and keyword != "nb_drones":
+            raise ParsingError(line_nb, "First line must define number of drones using 'nb_drones'")
         match keyword:
             case "nb_drones":
-                pass
+                nb_drones = parse_nb_drones(line, line_nb)
+                print(f"nb = {nb_drones}")
             case "hub":
                 pass
             case "connection":
@@ -32,4 +42,4 @@ def parse_file() -> None:
                 pass
             case _:
                 raise ParsingError(line_nb, f"unknown keyword '{keyword}'")
-    return 
+    return
