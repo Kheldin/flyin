@@ -4,27 +4,34 @@ help:
 	@echo "Available targets:"
 	@echo "  make install      - Install project dependencies using uv"
 	@echo "  make run          - Execute the main script with default paths"
-	@echo "  make run FUNCTIONS=<path> INPUT=<path> OUTPUT=<path>"
-	@echo "                    - Run with custom file paths"
+	@echo "  make run MAP=<path> FUNCTIONS=<path> INPUT=<path> OUTPUT=<path>"
+	@echo "                    - Run with custom file paths (MAP is required)"
 	@echo "  make debug        - Run the main script in debug mode (pdb)"
 	@echo "  make clean        - Remove temporary files and caches"
 	@echo "  make lint         - Run flake8 and mypy with standard flags"
 	@echo "  make lint-strict  - Run flake8 and mypy with strict flags"
 	@echo ""
 	@echo "Examples:"
-	@echo "  make run"
-	@echo "  make run FUNCTIONS=custom/fns.json INPUT=custom/tests.json"
+	@echo "  make run MAP=maps/level1.txt"
+	@echo "  make run MAP=maps/level1.txt FUNCTIONS=custom/fns.json INPUT=custom/tests.json"
 
 install:
 	@echo "Installing dependencies with uv..."
 	uv sync
 
 run:
-	@uv run python main.py
+ifndef MAP
+	$(error MAP is required. Usage: make run MAP=<path/to/map.txt>)
+endif
+ifeq ($(suffix $(MAP)),.txt)
+else
+	$(error MAP must point to a .txt file. Got: '$(MAP)')
+endif
+	@uv run python main.py $(MAP)
 
 debug:
 	@echo "Running in debug mode..."
-	uv run python -m pdb -m src
+	uv run python main.py
 
 clean:
 	@echo "Cleaning temporary files..."
