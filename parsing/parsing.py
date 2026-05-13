@@ -1,9 +1,7 @@
 import sys
 from models.map import Map, Drone, Connection, Hub
+from parsing.errors import ParsingError
 
-
-class ParsingError(Exception):
-    pass
 
 def parse_file() -> None:
     if (len(sys.argv) != 2):
