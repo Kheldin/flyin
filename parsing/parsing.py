@@ -19,19 +19,20 @@ def parse_file() -> None:
     drones: list[Drone]
     hubs: list[Hub]
     connections: list[Connection]
+    first_kw = 1;
 
-    # S'assurer que le premier keyword soit nb_drones
     for line_nb, raw in enumerate(file_content, start=1):
         line = raw.strip()
         if not line or line.startswith("#"):
             continue
         keyword = line.split(':')[0].strip()
-        if line_nb == 1 and keyword != "nb_drones":
-            raise ParsingError(line_nb, "First line must define number of drones using 'nb_drones'")
+        if first_kw == 1:
+            if keyword != "nb_drones":
+                raise ParsingError(line_nb, "First line must define number of drones using 'nb_drones'")
+        first_kw = 0
         match keyword:
             case "nb_drones":
                 nb_drones = parse_nb_drones(line, line_nb)
-                print(f"nb = {nb_drones}")
             case "hub":
                 pass
             case "connection":
