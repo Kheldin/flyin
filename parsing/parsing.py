@@ -1,12 +1,14 @@
 import sys
 from models.map import Map, Drone, Connection, Hub
 from parsing.errors import ParsingError, ArgumentError
+from parsing.parse_hubs import parse_hubs
 
-def parse_nb_drones(line: str, line_no: int) -> int:
+
+def parse_nb_drones(line: str, line_nb: int) -> int:
     line = line.replace(" ", "")
     nb_drones = int(line.split(":")[1])
     if not nb_drones > 0:
-        raise ParsingError(line_no, "nb_drones must be greater than 0")  
+        raise ParsingError(line_nb, "nb_drones must be greater than 0")  
     return (int(line.split(":")[1]))
 
 def parse_file() -> None:
@@ -34,7 +36,7 @@ def parse_file() -> None:
             case "nb_drones":
                 nb_drones = parse_nb_drones(line, line_nb)
             case "hub":
-                pass
+                parse_hubs(line, line_nb)
             case "connection":
                 pass
             case "start_hub":

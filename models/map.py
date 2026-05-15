@@ -6,6 +6,7 @@ from enum import Enum
 class Color(str, Enum):
     BLUE    = "blue"
     RED     = "red"
+    DARKRED     = "darkred"
     YELLOW  = "yellow"
     GREEN   = "green"
     ORANGE  = "orange"
@@ -15,6 +16,8 @@ class Color(str, Enum):
     BROWN   = "brown"
     MAGENTA = "magenta"
     GOLD    = "gold"
+    MAROON = "maroon"
+    CRIMSON = "crimson"
 
 
 class ZoneType(str, Enum):
@@ -31,8 +34,8 @@ class Drone(BaseModel):
 
 class Hub(BaseModel):
     name: str
-    x: int = Field(ge=0)
-    y: int = Field(ge=0)
+    x: int
+    y: int
     color: Color           = Field(default=Color.BLUE)
     zone_type: ZoneType    = Field(default=ZoneType.NORMAL)
     max_drones: int        = Field(ge=1, default=1)
