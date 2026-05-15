@@ -27,7 +27,7 @@ ifeq ($(suffix $(MAP)),.txt)
 else
 	$(error MAP must point to a .txt file. Got: '$(MAP)')
 endif
-	@uv run python main.py $(MAP)
+	@uv run python src/main.py $(MAP)
 
 debug:
 	@echo "Running in debug mode..."

@@ -37,11 +37,11 @@ class Hub(BaseModel):
     name: str
     x: int
     y: int
-    color: Color           = Field(default=Color.BLUE)
-    zone_type: ZoneType    = Field(default=ZoneType.NORMAL)
-    max_drones: int        = Field(ge=1, default=1)
-    start_hub: bool        = Field(default=False)
-    end_hub: bool          = Field(default=False)
+    color: str  = Field(default=Color.BLUE)
+    zone: str = Field(default=ZoneType.NORMAL)
+    max_drones: int = Field(ge=1, default=1)
+    start_hub: bool = Field(default=False)
+    end_hub: bool = Field(default=False)
     drones: list[Drone] | None = Field(default=None)
 
 

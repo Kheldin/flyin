@@ -1,4 +1,4 @@
-from parsing.errors import ParsingError
+from src.parsing.errors import ParsingError
 
 
 def parse_brackets(brackets: list[str], line_nb: int) -> dict[str, str | int]:
