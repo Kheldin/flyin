@@ -18,6 +18,7 @@ class Color(str, Enum):
     GOLD    = "gold"
     MAROON = "maroon"
     CRIMSON = "crimson"
+    VIOLET = "violet"
 
 
 class ZoneType(str, Enum):
