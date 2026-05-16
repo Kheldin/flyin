@@ -45,7 +45,7 @@ hub: overflow_hell2 8 1 [zone=restricted color=maroon max_drones=2]
 hub: overflow_hell3 9 1 [zone=restricted color=maroon max_drones=2]
 hub: overflow_hell4 7 -1 [zone=restricted color=maroon max_drones=2]
 hub: overflow_hell5 8 -1 [zone=restricted color=maroon max_drones=2]
-hub: overflow_hell6 9 -1 [zone=restricted color=maroon max_drones=2]
+hub: overflow_hell6 9 -1 [zone=restricted color=maroon max_drones=ddasa]
 
 # === LAYER 3: The False Hope Section ===
 # Priority zones that lead to more traps

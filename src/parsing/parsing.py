@@ -1,5 +1,5 @@
 import sys
-from models.map import Map, Drone, Connection, Hub
+from models.map import Map, Drone, Connection, Hub, Color
 from parsing.errors import ParsingError, ArgumentError
 from parsing.parse_hubs import parse_hubs
 
@@ -22,7 +22,6 @@ def parse_file() -> None:
     hubs: list[Hub]
     connections: list[Connection]
     first_kw = 1;
-
     for line_nb, raw in enumerate(file_content, start=1):
         line = raw.strip()
         if not line or line.startswith("#"):
