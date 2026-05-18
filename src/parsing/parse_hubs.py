@@ -5,8 +5,11 @@ from parsing.utils import parse_brackets
 def parse_hubs(line: str, line_nb: int) -> Hub:
     info = line.split(":")[1].strip().split(" ")
     name = info[0]
-    pos_x = info[1]
-    pos_y = info[2]
+    try:
+        pos_x = int(info[1])
+        pos_y = int(info[2])
+    except Exception as e:
+        raise ParsingError(line_nb, e.__repr__())
     zone: ZoneType = ZoneType.NORMAL
     color: Color = Color.RED
     max_drones: int = 1
@@ -38,6 +41,6 @@ def parse_hubs(line: str, line_nb: int) -> Hub:
                 except Exception as e:
                     raise ParsingError(line_nb, e.__repr__())
 
-    return Hub(name=name, x=int(pos_x), y=int(pos_y),
+    return Hub(name=name, x=pos_x, y=pos_y,
                zone=zone, max_drones=int(max_drones), color=color,
                start_hub=False, end_hub=False)
