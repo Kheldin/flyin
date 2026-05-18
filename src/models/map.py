@@ -47,8 +47,8 @@ class Hub(BaseModel):
 
 
 class Connection(BaseModel):
-    hub_1: Hub
-    hub_2: Hub
+    hub_1: Hub | str
+    hub_2: Hub | str
     max_link_capacity: int = Field(ge=1, default=1)
 
 

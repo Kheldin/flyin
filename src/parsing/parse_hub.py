@@ -2,7 +2,7 @@ from models.map import Hub, Color, ZoneType
 from parsing.errors import ParsingError, HubParsingError
 from parsing.utils import parse_brackets
 
-def parse_hubs(line: str, line_nb: int) -> Hub:
+def parse_hub(line: str, line_nb: int) -> Hub:
     valid_color = [c.value for c in Color]
     valid_meta_keys = ["zone", "max_drones", "color"]
     info = line.split(":")[1].strip().split(" ")

@@ -1,7 +1,8 @@
 import sys
-from models.map import Map, Drone, Connection, Hub, Color
+from models.map import Map, Drone, Connection, Hub
 from parsing.errors import ParsingError, ArgumentError
-from parsing.parse_hubs import parse_hubs
+from parsing.parse_hub import parse_hub
+from parsing.parse_connection import parse_connection
 
 
 def parse_nb_drones(line: str, line_nb: int) -> int:
@@ -18,9 +19,9 @@ def parse_file() -> None:
     with open(sys.argv[1]) as f:
         file_content = f.read().splitlines()
     
-    drones: list[Drone]
-    hubs: list[Hub]
-    connections: list[Connection]
+    drones: list[Drone] = []
+    hubs: list[Hub] = []
+    connections: list[Connection] = []
     first_kw = 1;
     for line_nb, raw in enumerate(file_content, start=1):
         line = raw.strip()
@@ -35,9 +36,15 @@ def parse_file() -> None:
             case "nb_drones":
                 nb_drones = parse_nb_drones(line, line_nb)
             case "hub":
-                parse_hubs(line, line_nb)
+                hub = parse_hub(line, line_nb)
+                for existing_hub in hubs:
+                    if existing_hub.name == hub.name:
+                        raise ParsingError(line_nb, f"Duplicate hub name: '{hub.name}'")
+                    if existing_hub.x == hub.x and existing_hub.y == hub.y:
+                        raise ParsingError(line_nb, f"Duplicate hub position: ({hub.x}, {hub.y})")
+                hubs.append(hub)
             case "connection":
-                pass
+                parse_connection(line, line_nb)
             case "start_hub":
                 pass
             case "end_hub":
