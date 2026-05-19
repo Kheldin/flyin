@@ -6,8 +6,8 @@ def parse_connection(line: str, line_nb: int) -> Connection:
     info = line.split(":")[1].strip().split(" ")
     if len(info) < 1:
         raise ConnectionParsingError(line_nb, "Connections must follow this model: zone1-zone2 OptionnalMetaData['max_link_capacity']")
-    if not '-' in info[0]:
-        raise ConnectionParsingError(line_nb, "Zones must be separated by '-'")
+    if not '-' in info[0] or info[0].count("-") != 1:
+        raise ConnectionParsingError(line_nb, "Provide only 2 zones separated by '-'")
     max_link_capacity = 1
     if len(info) > 1:
         meta_data = parse_brackets(info[1::], line_nb)
