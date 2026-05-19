@@ -12,6 +12,32 @@ def parse_nb_drones(line: str, line_nb: int) -> int:
         raise ParsingError(line_nb, "nb_drones must be greater than 0")  
     return (int(line.split(":")[1]))
 
+
+def ensure_no_duplicate_hub(hubs: list[Hub], hub: Hub, line_nb: int) -> None:
+    for existing_hub in hubs:
+        if existing_hub.name == hub.name:
+            raise ParsingError(line_nb, f"Duplicate hub name: '{hub.name}'")
+        if existing_hub.x == hub.x and existing_hub.y == hub.y:
+            raise ParsingError(line_nb, f"Duplicate hub position: ({hub.x}, {hub.y})")
+
+
+def ensure_no_duplicate_connection(
+    connections: list[Connection], connection: Connection, line_nb: int
+) -> None:
+    def endpoint_name(endpoint: Hub | str) -> str:
+        return endpoint.name if isinstance(endpoint, Hub) else endpoint
+
+    new_pair = tuple(sorted((endpoint_name(connection.hub_1), endpoint_name(connection.hub_2))))
+    for existing_con in connections:
+        existing_pair = tuple(
+            sorted((endpoint_name(existing_con.hub_1), endpoint_name(existing_con.hub_2)))
+        )
+        if existing_pair == new_pair:
+            raise ParsingError(
+                line_nb,
+                f"Duplicate connection between '{connection.hub_1}' and '{connection.hub_2}'",
+            )
+
 def parse_file() -> None:
     if (len(sys.argv) != 2):
         raise ArgumentError("Only one arg required: Path of the map")
@@ -37,14 +63,12 @@ def parse_file() -> None:
                 nb_drones = parse_nb_drones(line, line_nb)
             case "hub":
                 hub = parse_hub(line, line_nb)
-                for existing_hub in hubs:
-                    if existing_hub.name == hub.name:
-                        raise ParsingError(line_nb, f"Duplicate hub name: '{hub.name}'")
-                    if existing_hub.x == hub.x and existing_hub.y == hub.y:
-                        raise ParsingError(line_nb, f"Duplicate hub position: ({hub.x}, {hub.y})")
+                ensure_no_duplicate_hub(hubs, hub, line_nb)
                 hubs.append(hub)
             case "connection":
-                parse_connection(line, line_nb)
+                connection = parse_connection(line, line_nb)
+                ensure_no_duplicate_connection(connections, connection, line_nb)
+                connections.append(connection)
             case "start_hub":
                 pass
             case "end_hub":

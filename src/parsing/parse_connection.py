@@ -1,5 +1,5 @@
 from parsing.utils import parse_brackets
-from parsing.errors import ParsingError, ConnectionParsingError
+from parsing.errors import ConnectionParsingError
 from models.map import Connection
 
 def parse_connection(line: str, line_nb: int) -> Connection:
@@ -16,4 +16,4 @@ def parse_connection(line: str, line_nb: int) -> Connection:
 
     hub1 = info[0].split("-")[0]
     hub2 = info[0].split("-")[1]
-    return (Connection(hub_1=hub1, hub_2=hub2, max_link_capacity=max_link_capacity))
+    return Connection(hub_1=hub1, hub_2=hub2, max_link_capacity=max_link_capacity, line=line_nb)
