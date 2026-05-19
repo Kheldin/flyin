@@ -50,3 +50,11 @@ def parse_hub(line: str, line_nb: int) -> Hub:
     return Hub(name=name, x=pos_x, y=pos_y,
                zone=zone, max_drones=int(max_drones), color=color,
                start_hub=False, end_hub=False)
+
+
+def ensure_no_duplicate_hub(hubs: list[Hub], hub: Hub, line_nb: int) -> None:
+    for existing_hub in hubs:
+        if existing_hub.name == hub.name:
+            raise ParsingError(line_nb, f"Duplicate hub name: '{hub.name}'")
+        if existing_hub.x == hub.x and existing_hub.y == hub.y:
+            raise ParsingError(line_nb, f"Duplicate hub position: ({hub.x}, {hub.y})")

@@ -1,78 +1,39 @@
 import sys
 from models.map import Map, Drone, Connection, Hub
 from parsing.errors import ParsingError, ArgumentError
-from parsing.parse_hub import parse_hub
-from parsing.parse_connection import parse_connection
+from parsing.parse_hub import parse_hub, ensure_no_duplicate_hub
+from parsing.parse_connection import parse_connection, check_connections_hubs, ensure_no_duplicate_connection
 
 
 def parse_nb_drones(line: str, line_nb: int) -> int:
     line = line.replace(" ", "")
     nb_drones = int(line.split(":")[1])
     if not nb_drones > 0:
-        raise ParsingError(line_nb, "nb_drones must be greater than 0")  
-    return (int(line.split(":")[1]))
-
-
-def ensure_no_duplicate_hub(hubs: list[Hub], hub: Hub, line_nb: int) -> None:
-    for existing_hub in hubs:
-        if existing_hub.name == hub.name:
-            raise ParsingError(line_nb, f"Duplicate hub name: '{hub.name}'")
-        if existing_hub.x == hub.x and existing_hub.y == hub.y:
-            raise ParsingError(line_nb, f"Duplicate hub position: ({hub.x}, {hub.y})")
-
-
-def ensure_no_duplicate_connection(
-    connections: list[Connection], connection: Connection, line_nb: int
-) -> None:
-    def endpoint_name(endpoint: Hub | str) -> str:
-        return endpoint.name if isinstance(endpoint, Hub) else endpoint
-
-    new_pair = tuple(sorted((endpoint_name(connection.hub_1), endpoint_name(connection.hub_2))))
-    for existing_con in connections:
-        existing_pair = tuple(
-            sorted((endpoint_name(existing_con.hub_1), endpoint_name(existing_con.hub_2)))
-        )
-        if existing_pair == new_pair:
-            raise ParsingError(
-                line_nb,
-                f"Duplicate connection between '{connection.hub_1}' and '{connection.hub_2}'",
-            )
-
-def check_connections_hubs(connections: list[Connection], hubs: list[Hub]) -> None:
-    unique_hubs: set[str] = set()
-    hub_to_line: dict[str, int] = {}
-    for con in connections:
-        hub1_name = con.hub_1.name if isinstance(con.hub_1, Hub) else con.hub_1
-        hub2_name = con.hub_2.name if isinstance(con.hub_2, Hub) else con.hub_2
-        unique_hubs.add(hub1_name)
-        unique_hubs.add(hub2_name)
-        hub_to_line[hub1_name] = con.line
-        hub_to_line[hub2_name] = con.line
-    hub_names = {hub.name for hub in hubs}
-    for hub_con in unique_hubs:
-        if hub_con not in hub_names:
-            raise ParsingError(hub_to_line[hub_con], f"Unknown hub: '{hub_con}'")
+        raise ParsingError(line_nb, "nb_drones must be greater than 0")
+    return int(line.split(":")[1])
 
 
 def parse_file() -> None:
-    if (len(sys.argv) != 2):
+    if len(sys.argv) != 2:
         raise ArgumentError("Only one arg required: Path of the map")
- 
+
     with open(sys.argv[1]) as f:
         file_content = f.read().splitlines()
-    
+
     drones: list[Drone] = []
     hubs: list[Hub] = []
     connections: list[Connection] = []
-    first_kw = 1;
+    first_kw = 1
     for line_nb, raw in enumerate(file_content, start=1):
         line = raw.strip()
         if not line or line.startswith("#"):
             continue
-        keyword = line.split(':')[0].strip()
+        keyword = line.split(":")[0].strip()
         if first_kw == 1:
             if keyword != "nb_drones":
-                raise ParsingError(line_nb, "First line must define number of drones using 'nb_drones'")
+                raise ParsingError(
+                    line_nb, "First line must define number of drones using 'nb_drones'"
+                )
         first_kw = 0
         match keyword:
             case "nb_drones":
