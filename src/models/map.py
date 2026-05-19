@@ -45,6 +45,7 @@ class Hub(BaseModel):
     start_hub: bool = Field(default=False)
     end_hub: bool   = Field(default=False)
     drones: list[Drone] | None = Field(default=None)
+    line: int
 
 
 class Connection(BaseModel):

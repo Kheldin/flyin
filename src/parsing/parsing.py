@@ -16,8 +16,12 @@ def start_end_present(hubs: list[Hub]) -> int:
     met_end = 0
     for hub in hubs:
         if hub.start_hub == 1:
-            met_start = 1;
+            if met_start == 1:
+                raise ParsingError(hub.line, "You must provide only one start")
+            met_start = 1
         if hub.end_hub == 1:
+            if met_end == 1:
+                raise ParsingError(hub.line, "You must provide only one end")
             met_end = 1
     return met_start and met_end
 

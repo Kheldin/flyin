@@ -51,7 +51,7 @@ def parse_hub(line: str, line_nb: int, start: bool, end: bool) -> Hub:
 
     return Hub(name=name, x=pos_x, y=pos_y,
                zone=zone, max_drones=int(max_drones), color=color,
-               start_hub=start, end_hub=end)
+               start_hub=start, end_hub=end, line=line_nb)
 
 
 def ensure_no_duplicate_hub(hubs: list[Hub], hub: Hub, line_nb: int) -> None:
