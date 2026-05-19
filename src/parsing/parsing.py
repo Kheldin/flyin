@@ -4,7 +4,6 @@ from parsing.errors import ParsingError, ArgumentError
 from parsing.parse_hub import parse_hub, ensure_no_duplicate_hub
 from parsing.parse_connection import parse_connection, check_connections_hubs, ensure_no_duplicate_connection
 
-
 def parse_nb_drones(line: str, line_nb: int) -> int:
     line = line.replace(" ", "")
     nb_drones = int(line.split(":")[1])
@@ -13,7 +12,8 @@ def parse_nb_drones(line: str, line_nb: int) -> int:
     return int(line.split(":")[1])
 
 
-def parse_file() -> None:
+def parse_file() -> Map:
+    """Parse the map files"""
     if len(sys.argv) != 2:
         raise ArgumentError("Only one arg required: Path of the map")
 
@@ -24,6 +24,7 @@ def parse_file() -> None:
     hubs: list[Hub] = []
     connections: list[Connection] = []
     first_kw = 1
+    nb_drones = 0
     for line_nb, raw in enumerate(file_content, start=1):
         line = raw.strip()
         if not line or line.startswith("#"):
@@ -39,7 +40,7 @@ def parse_file() -> None:
             case "nb_drones":
                 nb_drones = parse_nb_drones(line, line_nb)
             case "hub":
-                hub = parse_hub(line, line_nb)
+                hub = parse_hub(line, line_nb, False, False)
                 ensure_no_duplicate_hub(hubs, hub, line_nb)
                 hubs.append(hub)
             case "connection":
@@ -47,10 +48,31 @@ def parse_file() -> None:
                 ensure_no_duplicate_connection(connections, connection, line_nb)
                 connections.append(connection)
             case "start_hub":
-                pass
+                hub = parse_hub(line, line_nb, True, False)
+                ensure_no_duplicate_hub(hubs, hub, line_nb)
+                hubs.append(hub)
             case "end_hub":
-                pass
+                hub = parse_hub(line, line_nb, False, True)
+                ensure_no_duplicate_hub(hubs, hub, line_nb)
+                hubs.append(hub)
             case _:
                 raise ParsingError(line_nb, f"unknown keyword '{keyword}'")
     check_connections_hubs(connections, hubs)
-    return
+    # Replace hub string references with actual Hub objects in connections
+    hub_map = {hub.name: hub for hub in hubs}
+    for connection in connections:
+        if isinstance(connection.hub_1, str):
+            connection.hub_1 = hub_map[connection.hub_1]
+        if isinstance(connection.hub_2, str):
+            connection.hub_2 = hub_map[connection.hub_2]
+
+    map = Map(
+        nb_drones=nb_drones,
+        drones=drones,
+        connections=connections,
+        hubs=hubs
+    )
+    return map
+
+# Check que max drone soit le meme dans le start et end 
+# ou alors l'ignorer 
