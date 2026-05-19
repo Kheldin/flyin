@@ -13,7 +13,14 @@ def parse_connection(line: str, line_nb: int) -> Connection:
         meta_data = parse_brackets(info[1::], line_nb)
         if len(meta_data) != 1:
             raise ConnectionParsingError(line_nb, "Connections must follow this model: zone1-zone2 OptionnalMetaData['max_link_capacity']")
-
+        if not "max_link_capacity" in  meta_data.keys():
+            raise ConnectionParsingError(line_nb, "Only 'max_link_capacity' is allowed.")
+        try:
+            max_link_capacity = int(meta_data["max_link_capacity"])
+            if max_link_capacity < 1:
+                raise ConnectionParsingError(line_nb, "max_link_capacity must be greater than 0.")
+        except ValueError:
+            raise ConnectionParsingError(line_nb, "'max_link_capacity' should be a positive integer.")
     hub1 = info[0].split("-")[0]
     hub2 = info[0].split("-")[1]
     return Connection(hub_1=hub1, hub_2=hub2, max_link_capacity=max_link_capacity, line=line_nb)

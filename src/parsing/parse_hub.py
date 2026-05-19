@@ -44,6 +44,8 @@ def parse_hub(line: str, line_nb: int, start: bool, end: bool) -> Hub:
             else:
                 try:
                     max_drones = int(meta_data["max_drones"])
+                    if max_drones <= 0:
+                        raise HubParsingError(line_nb, "max_drones should be greater than 0.")
                 except Exception as e:
                     raise ParsingError(line_nb, e.__repr__())
 

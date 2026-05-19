@@ -11,6 +11,7 @@ def parse_nb_drones(line: str, line_nb: int) -> int:
         raise ParsingError(line_nb, "nb_drones must be greater than 0")
     return int(line.split(":")[1])
 
+# def start_end_present(hubs: list[Hub]) -> int:
 
 def parse_file() -> Map:
     """Parse the map files"""
@@ -73,6 +74,4 @@ def parse_file() -> Map:
         hubs=hubs
     )
     return map
-
-# Check que max drone soit le meme dans le start et end 
-# ou alors l'ignorer 
+# gerer negtive nb drone 
