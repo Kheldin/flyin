@@ -38,6 +38,22 @@ def ensure_no_duplicate_connection(
                 f"Duplicate connection between '{connection.hub_1}' and '{connection.hub_2}'",
             )
 
+def check_connections_hubs(connections: list[Connection], hubs: list[Hub]) -> None:
+    unique_hubs: set[str] = set()
+    hub_to_line: dict[str, int] = {}
+    for con in connections:
+        hub1_name = con.hub_1.name if isinstance(con.hub_1, Hub) else con.hub_1
+        hub2_name = con.hub_2.name if isinstance(con.hub_2, Hub) else con.hub_2
+        unique_hubs.add(hub1_name)
+        unique_hubs.add(hub2_name)
+        hub_to_line[hub1_name] = con.line
+        hub_to_line[hub2_name] = con.line
+    hub_names = {hub.name for hub in hubs}
+    for hub_con in unique_hubs:
+        if hub_con not in hub_names:
+            raise ParsingError(hub_to_line[hub_con], f"Unknown hub: '{hub_con}'")
+
+
 def parse_file() -> None:
     if (len(sys.argv) != 2):
         raise ArgumentError("Only one arg required: Path of the map")
@@ -75,4 +91,5 @@ def parse_file() -> None:
                 pass
             case _:
                 raise ParsingError(line_nb, f"unknown keyword '{keyword}'")
+    check_connections_hubs(connections, hubs)
     return
