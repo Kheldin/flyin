@@ -11,7 +11,15 @@ def parse_nb_drones(line: str, line_nb: int) -> int:
         raise ParsingError(line_nb, "nb_drones must be greater than 0")
     return int(line.split(":")[1])
 
-# def start_end_present(hubs: list[Hub]) -> int:
+def start_end_present(hubs: list[Hub]) -> int:
+    met_start = 0
+    met_end = 0
+    for hub in hubs:
+        if hub.start_hub == 1:
+            met_start = 1;
+        if hub.end_hub == 1:
+            met_end = 1
+    return met_start and met_end
 
 def parse_file() -> Map:
     """Parse the map files"""
@@ -73,5 +81,6 @@ def parse_file() -> Map:
         connections=connections,
         hubs=hubs
     )
+    if not start_end_present(hubs):
+        raise ParsingError(0, "Start or end hub missing.")
     return map
-# gerer negtive nb drone 
