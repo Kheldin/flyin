@@ -1,8 +1,13 @@
 from parsing.parsing import parse_file
+import pygame
+from game.game_loop import game_loop
+
 
 def main():
     try:
         parse_file()
+        pygame.init()
+        game_loop()
     except Exception as e:
         print(e)
 
