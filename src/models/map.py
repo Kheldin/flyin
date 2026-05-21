@@ -53,6 +53,7 @@ class Connection(BaseModel):
     hub_2: Hub | str
     max_link_capacity: int = Field(ge=1, default=1)
     line: int
+    drone: list[Drone] = Field(default=[])
 
 
 class Map(BaseModel):
