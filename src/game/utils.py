@@ -17,3 +17,4 @@ def load_image(name: str, colorkey: pg.Color | None = None, scale: int = 1):
     if colorkey is not None:
         image.set_colorkey(colorkey, pg.RLEACCEL)
     return image, image.get_rect()
+

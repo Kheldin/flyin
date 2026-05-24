@@ -5,9 +5,9 @@ from game.game_loop import game_loop
 
 def main():
     try:
-        parse_file()
+        map = parse_file()
         pygame.init()
-        game_loop()
+        game_loop(map)
     except Exception as e:
         print(e)
 
