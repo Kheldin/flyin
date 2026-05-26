@@ -10,7 +10,7 @@ class HubSprite(pg.sprite.Sprite):
     def __init__(self, *groups: pg.sprite.AbstractGroup[Any]) -> None:
         super().__init__(*groups)
 
-    def setup(self, hub: Hub, center: tuple[int, int], size: int = 40) -> None:
+    def setup(self, hub: Hub, center: tuple[int, int], size: int = 100) -> None:
         """Initialize sprite visuals using hub properties.
 
         - `size` controls the surface size (diameter) used for the circle.

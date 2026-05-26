@@ -5,7 +5,7 @@ import sys
 import pygame as pg
 from pygame.locals import QUIT
 
-from game.camera import Camera
+from game.camera import Camera, DEFAULT_ZOOM
 from game.game_object import HubSprite
 from models.map import Map
 
@@ -19,12 +19,27 @@ SCREEN_HEIGHT: int = 1080
 
 # Physics
 FPS: int = 60
+BASE_HUB_DIAMETER: int = 100
+BASE_CONNECTION_WIDTH: int = 4
+BASE_NAME_FONT_SIZE: int = 20
+BASE_COUNT_FONT_SIZE: int = 26
+LABEL_PADDING_X: int = 10
+LABEL_PADDING_Y: int = 5
+LABEL_GAP: int = 4
+LABEL_BG_COLOR: tuple[int, int, int, int] = (20, 24, 30, 190)
+LABEL_BORDER_COLOR: tuple[int, int, int, int] = (255, 255, 255, 60)
+LABEL_TEXT_COLOR: tuple[int, int, int] = (255, 255, 255)
+LABEL_OUTLINE_COLOR: tuple[int, int, int] = (0, 0, 0)
+CONNECTION_COLOR: tuple[int, int, int] = (165, 172, 184)
+HUB_RING_COLOR: tuple[int, int, int, int] = (255, 255, 255, 70)
+WORLD_SPREAD: float = 1.6
 
 
 def _compute_base_hub_pixels(
     map_: Map,
     screen: pg.Surface,
     padding: int = 20,
+    spread: float = WORLD_SPREAD,
 ) -> dict[str, tuple[float, float]]:
     """Compute world-space pixel positions for hubs before camera transforms.
 
@@ -54,12 +69,30 @@ def _compute_base_hub_pixels(
     range_x = max(1, max_x - min_x)
     range_y = max(1, max_y - min_y)
 
-    return {
+    # initial pixel positions
+    base_positions = {
         hub.name: (
             padding + (hub.x - min_x) / range_x * drawable_w,
             padding + (hub.y - min_y) / range_y * drawable_h,
         )
         for hub in map_.hubs
+    }
+
+    # spread points away from the map center to reduce compactness
+    xs = [p[0] for p in base_positions.values()]
+    ys = [p[1] for p in base_positions.values()]
+    if not xs or not ys:
+        return base_positions
+
+    center_x = sum(xs) / len(xs)
+    center_y = sum(ys) / len(ys)
+
+    def spread_coord(x: float, center: float) -> float:
+        return center + (x - center) * float(spread)
+
+    return {
+        name: (int(spread_coord(px, center_x)), int(spread_coord(py, center_y)))
+        for name, (px, py) in base_positions.items()
     }
 
 
@@ -108,10 +141,16 @@ def _build_hub_sprites(
     return hubs, hub_by_name
 
 
+def _scale_value(base_value: int, zoom: float) -> int:
+    """Scale a base size by zoom while keeping a readable minimum."""
+    return max(1, int(base_value * (zoom / DEFAULT_ZOOM)))
+
+
 def _draw_connections(
     screen: pg.Surface,
     map_: Map,
     screen_positions: dict[str, tuple[int, int]],
+    zoom: float,
 ) -> None:
     """Draw edges between connected hubs using precomputed integer positions.
 
@@ -135,7 +174,9 @@ def _draw_connections(
         if s1 is None or s2 is None:
             continue
 
-        pg.draw.line(screen, BLACK, s1, s2, width=5)
+        width = _scale_value(BASE_CONNECTION_WIDTH, zoom)
+        pg.draw.aaline(screen, CONNECTION_COLOR, s1, s2)
+        pg.draw.line(screen, CONNECTION_COLOR, s1, s2, width=width)
 
 
 def _update_sprite_positions(
@@ -154,28 +195,62 @@ def _update_sprite_positions(
             sprite.rect.center = pos
 
 
+def _update_hub_sprite_sizes(
+    hub_by_name: dict[str, HubSprite],
+    zoom: float,
+) -> None:
+    """Regenerate hub surfaces so their size tracks the camera zoom."""
+    size = _scale_value(BASE_HUB_DIAMETER, zoom)
+    for sprite in hub_by_name.values():
+        sprite.setup(sprite.hub, sprite.rect.center, size=size)
+        ring = pg.Surface(sprite.image.get_size(), pg.SRCALPHA)
+        pg.draw.circle(
+            ring,
+            HUB_RING_COLOR,
+            (sprite.rect.width // 2, sprite.rect.height // 2),
+            max(1, sprite.rect.width // 2 - 2),
+            width=2,
+        )
+        sprite.image.blit(ring, (0, 0))
+
+
 def _draw_hub_drone_counts(
     screen: pg.Surface,
     hub_by_name: dict[str, HubSprite],
+    zoom: float,
 ) -> None:
-    """Draw a centered drone count inside each hub sprite."""
-    font = pg.font.Font(None, 28)
-    outline_offsets = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+    """Draw the hub name and drone count inside each hub sprite."""
+    name_font = pg.font.Font(None, _scale_value(BASE_NAME_FONT_SIZE, zoom))
+    count_font = pg.font.Font(None, _scale_value(BASE_COUNT_FONT_SIZE, zoom))
+
+    def draw_label(text: str, font: pg.font.Font, center: tuple[int, int]) -> None:
+        text_surface = font.render(text, True, LABEL_TEXT_COLOR)
+        text_outline = font.render(text, True, LABEL_OUTLINE_COLOR)
+        text_rect = text_surface.get_rect(center=center)
+        padding_x = LABEL_PADDING_X
+        padding_y = LABEL_PADDING_Y
+        bg_rect = text_rect.inflate(padding_x * 2, padding_y * 2)
+        background = pg.Surface(bg_rect.size, pg.SRCALPHA)
+        pg.draw.rect(background, LABEL_BG_COLOR, background.get_rect(), border_radius=6)
+        pg.draw.rect(background, LABEL_BORDER_COLOR, background.get_rect(), width=1, border_radius=6)
+        screen.blit(background, bg_rect)
+
+        outline_offsets = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+        for offset_x, offset_y in outline_offsets:
+            screen.blit(
+                text_outline,
+                text_outline.get_rect(center=(center[0] + offset_x, center[1] + offset_y)),
+            )
+        screen.blit(text_surface, text_rect)
 
     for sprite in hub_by_name.values():
         hub = sprite.hub
         drone_count = len(hub.drones or [])
-        label = font.render(str(drone_count), True, (255, 255, 255))
-        label_rect = label.get_rect(center=sprite.rect.center)
-
-        for offset_x, offset_y in outline_offsets:
-            outline = font.render(str(drone_count), True, (0, 0, 0))
-            outline_rect = outline.get_rect(
-                center=(sprite.rect.centerx + offset_x, sprite.rect.centery + offset_y)
-            )
-            screen.blit(outline, outline_rect)
-
-        screen.blit(label, label_rect)
+        offset = max(18, sprite.rect.height // 2 + LABEL_GAP * 3)
+        name_center = (sprite.rect.centerx, sprite.rect.centery - offset)
+        count_center = (sprite.rect.centerx, sprite.rect.centery + offset)
+        draw_label(hub.name, name_font, name_center)
+        draw_label(str(drone_count), count_font, count_center)
 
 
 def game_loop(map_: Map) -> None:
@@ -235,10 +310,11 @@ def game_loop(map_: Map) -> None:
             for name, base in base_positions.items()
         }
 
-        _draw_connections(screen, map_, screen_positions)
+        _draw_connections(screen, map_, screen_positions, camera.zoom)
         _update_sprite_positions(hub_by_name, screen_positions)
+        _update_hub_sprite_sizes(hub_by_name, camera.zoom)
         hub_sprites.draw(screen)
-        _draw_hub_drone_counts(screen, hub_by_name)
+        _draw_hub_drone_counts(screen, hub_by_name, camera.zoom)
 
         pg.display.flip()
         clock.tick(FPS)
