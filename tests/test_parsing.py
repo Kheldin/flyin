@@ -14,7 +14,10 @@ from parsing.parsing import parse_file
 class ParsingTests(unittest.TestCase):
     def test_parse_hub_defaults_invalid_color_to_red(self) -> None:
         hub = parse_hub(
-            "hub: alpha 1 2 [color=not_a_real_color]", 1, False, False
+            "hub: alpha 1 2 [color=not_a_real_color]",
+            1,
+            start=False,
+            end=False,
         )
 
         self.assertEqual(hub.color, Color.RED)
@@ -41,7 +44,8 @@ class ParsingTests(unittest.TestCase):
             with self.assertRaises(ConnectionParsingError) as exc:
                 parse_file()
 
-        self.assertEqual(str(exc.exception), "Line 3: Unknown hub: 'goal'")
+        self.assertEqual(exc.exception.line_no, 3)
+        self.assertEqual(exc.exception.reason, "Unknown hub: 'goal'")
 
 
 if __name__ == "__main__":

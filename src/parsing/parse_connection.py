@@ -3,6 +3,10 @@ from parsing.errors import ConnectionParsingError
 from models.map import Connection, Hub
 
 
+def _endpoint_name(endpoint: Hub | str) -> str:
+    return endpoint.name if isinstance(endpoint, Hub) else endpoint
+
+
 def parse_connection(line: str, line_nb: int) -> Connection:
     info = line.split(":")[1].strip().split(" ")
     if len(info) < 1:
@@ -32,7 +36,7 @@ def ensure_connection_hubs_defined(
 ) -> None:
     known_hub_names = {hub.name for hub in hubs}
     for hub_ref in (connection.hub_1, connection.hub_2):
-        hub_name = hub_ref.name if isinstance(hub_ref, Hub) else hub_ref
+        hub_name = _endpoint_name(hub_ref)
         if hub_name not in known_hub_names:
             raise ConnectionParsingError(line_nb, f"Unknown hub: '{hub_name}'")
 
@@ -40,18 +44,15 @@ def ensure_connection_hubs_defined(
 def ensure_no_duplicate_connection(
     connections: list[Connection], connection: Connection, line_nb: int
 ) -> None:
-    def endpoint_name(endpoint: Hub | str) -> str:
-        return endpoint.name if isinstance(endpoint, Hub) else endpoint
-
     new_pair = tuple(
-        sorted((endpoint_name(connection.hub_1),
-                endpoint_name(connection.hub_2)))
+        sorted((_endpoint_name(connection.hub_1),
+                _endpoint_name(connection.hub_2)))
     )
     for existing_con in connections:
         existing_pair = tuple(
             sorted(
-                (endpoint_name(existing_con.hub_1),
-                 endpoint_name(existing_con.hub_2))
+                (_endpoint_name(existing_con.hub_1),
+                 _endpoint_name(existing_con.hub_2))
             )
         )
         if existing_pair == new_pair:
