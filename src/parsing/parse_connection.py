@@ -2,6 +2,7 @@ from parsing.utils import parse_brackets
 from parsing.errors import ConnectionParsingError
 from models.map import Connection, Hub
 
+
 def parse_connection(line: str, line_nb: int) -> Connection:
     info = line.split(":")[1].strip().split(" ")
     if len(info) < 1:
@@ -24,6 +25,16 @@ def parse_connection(line: str, line_nb: int) -> Connection:
     hub1 = info[0].split("-")[0]
     hub2 = info[0].split("-")[1]
     return Connection(hub_1=hub1, hub_2=hub2, max_link_capacity=max_link_capacity, line=line_nb)
+
+
+def ensure_connection_hubs_defined(
+    connection: Connection, hubs: list[Hub], line_nb: int
+) -> None:
+    known_hub_names = {hub.name for hub in hubs}
+    for hub_ref in (connection.hub_1, connection.hub_2):
+        hub_name = hub_ref.name if isinstance(hub_ref, Hub) else hub_ref
+        if hub_name not in known_hub_names:
+            raise ConnectionParsingError(line_nb, f"Unknown hub: '{hub_name}'")
 
 
 def ensure_no_duplicate_connection(

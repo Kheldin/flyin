@@ -2,7 +2,12 @@ import sys
 from models.map import Map, Drone, Connection, Hub
 from parsing.errors import ParsingError, ArgumentError
 from parsing.parse_hub import parse_hub, ensure_no_duplicate_hub
-from parsing.parse_connection import parse_connection, check_connections_hubs, ensure_no_duplicate_connection
+from parsing.parse_connection import (
+    parse_connection,
+    check_connections_hubs,
+    ensure_connection_hubs_defined,
+    ensure_no_duplicate_connection,
+)
 
 def parse_nb_drones(line: str, line_nb: int) -> int:
     line = line.replace(" ", "")
@@ -58,6 +63,7 @@ def parse_file() -> Map:
                 hubs.append(hub)
             case "connection":
                 connection = parse_connection(line, line_nb)
+                ensure_connection_hubs_defined(connection, hubs, line_nb)
                 ensure_no_duplicate_connection(connections, connection, line_nb)
                 connections.append(connection)
             case "start_hub":

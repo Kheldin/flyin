@@ -40,7 +40,7 @@ def parse_hub(line: str, line_nb: int, start: bool, end: bool) -> Hub:
                 try:
                     color = Color(meta_data["color"])
                 except ValueError:
-                    raise ParsingError(line_nb, f"Color '{meta_data['color']}' is invalid. Valid colors: {valid_color}")
+                    color = Color.RED
             else:
                 try:
                     max_drones = int(meta_data["max_drones"])
