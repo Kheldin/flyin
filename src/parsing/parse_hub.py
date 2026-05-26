@@ -1,14 +1,12 @@
-from models.map import Hub, Color, ZoneType
+from models.map import Hub, ZoneType
 from parsing.errors import ParsingError, HubParsingError
 from parsing.utils import parse_brackets
 
 def parse_hub(line: str, line_nb: int, start: bool, end: bool) -> Hub:
-    valid_color = [c.value for c in Color]
     valid_meta_keys = ["zone", "max_drones", "color"]
     info = line.split(":")[1].strip().split(" ")
     if len(info) < 3:
-        raise HubParsingError(line_nb, f"Hubs must follow this model: name x y OptionnalMetaData{valid_meta_keys}\n"
-                           f"Available color: {valid_color}")
+        raise HubParsingError(line_nb, f"Hubs must follow this model: name x y OptionnalMetaData{valid_meta_keys}")
     name = info[0]
     if "-" in name:
         raise HubParsingError(line_nb, f"Hub name '{name}' is invalid. Names must not contain spaces or '-'.")
@@ -17,10 +15,9 @@ def parse_hub(line: str, line_nb: int, start: bool, end: bool) -> Hub:
         pos_y = int(info[2])
     except Exception as e:
         raise ParsingError(line_nb, f"{e.__repr__()}\n"
-                           f"Hubs must follow this model: name x y OptionnalMetaData{valid_meta_keys}\n"
-                           f"Available color: {valid_color}")
+                           f"Hubs must follow this model: name x y OptionnalMetaData{valid_meta_keys}")
     zone: ZoneType = ZoneType.NORMAL
-    color: Color = Color.RED
+    color: str = "red"
     max_drones: int = 1
     if len(info) >= 4:
         meta_data = parse_brackets(info[3::], line_nb)
@@ -37,10 +34,8 @@ def parse_hub(line: str, line_nb: int, start: bool, end: bool) -> Hub:
                     valid = [z.value for z in ZoneType]
                     raise ParsingError(line_nb, f"Zone '{meta_data['zone']}' is invalid. Valid zones: {valid}")
             elif key == "color":
-                try:
-                    color = Color(meta_data["color"])
-                except ValueError:
-                    raise ParsingError(line_nb, f"Color '{meta_data['color']}' is invalid. Valid colors: {valid_color}")
+                # Accept any string for color; it's stored as-is and defaults to 'red'
+                color = meta_data["color"]
             else:
                 try:
                     max_drones = int(meta_data["max_drones"])

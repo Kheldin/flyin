@@ -1,6 +1,6 @@
 import sys
 from models.map import Map, Drone, Connection, Hub
-from parsing.errors import ParsingError, ArgumentError
+from parsing.errors import ParsingError, ArgumentError, ConnectionParsingError
 from parsing.parse_hub import parse_hub, ensure_no_duplicate_hub
 from parsing.parse_connection import parse_connection, check_connections_hubs, ensure_no_duplicate_connection
 
@@ -58,6 +58,12 @@ def parse_file() -> Map:
                 hubs.append(hub)
             case "connection":
                 connection = parse_connection(line, line_nb)
+                current_hub_names = {hub.name for hub in hubs}
+                hub1_name = connection.hub_1 if isinstance(connection.hub_1, str) else connection.hub_1.name
+                hub2_name = connection.hub_2 if isinstance(connection.hub_2, str) else connection.hub_2.name
+                if hub1_name not in current_hub_names or hub2_name not in current_hub_names:
+                    missing = hub1_name if hub1_name not in current_hub_names else hub2_name
+                    raise ConnectionParsingError(line_nb, f"Unknown hub: '{missing}'")
                 ensure_no_duplicate_connection(connections, connection, line_nb)
                 connections.append(connection)
             case "start_hub":

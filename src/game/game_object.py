@@ -1,6 +1,5 @@
 import pygame as pg
-from typing import Any
-from models.map import Hub
+from typing import Any, cast
 from models.map import Drone, Hub
 
 
@@ -20,9 +19,10 @@ class HubSprite(pg.sprite.Sprite):
         diameter = max(4, int(size))
         self.image = pg.Surface((diameter, diameter), pg.SRCALPHA)
         try:
-            color = pg.Color(hub.color.value)
+            raw_color = cast(str, getattr(hub.color, "value", hub.color))
+            color = pg.Color(raw_color)
         except Exception:
-            color = (0, 0, 255)
+            color = pg.Color("red")
         pg.draw.circle(self.image, color, (diameter // 2, diameter // 2), diameter // 2)
         self.rect = self.image.get_rect(center=center)
 

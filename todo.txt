@@ -1,2 +1,0 @@
-reject if connection use a yet non defined hub
-Accept any string for colors and set a default one
