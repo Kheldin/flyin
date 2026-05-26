@@ -6,7 +6,6 @@ import pygame as pg
 from pygame.locals import QUIT
 
 from game.game_object import HubSprite
-from game.utils import load_image
 from models.map import Map
 
 # Colours
@@ -21,7 +20,7 @@ SCREEN_HEIGHT: int = 720
 MIN_ZOOM: float = 0.25
 MAX_ZOOM: float = 6.0
 ZOOM_FACTOR: float = 1.15
-PAN_SMOOTH: float = 0.25
+PAN_SMOOTH: float = 0.1
 DEFAULT_ZOOM: float = 0.90
 
 # Physics
@@ -266,9 +265,6 @@ def game_loop(map_: Map) -> None:
     pg.display.set_caption("FlyIn")
 
     clock = pg.time.Clock()
-    drone: pg.Surface
-    drone_rect: pg.Rect
-    drone, drone_rect = load_image("drone/Forward.png", scale=5)
 
     base_positions: dict[str, tuple[float, float]] = _compute_base_hub_pixels(
         map_, screen
@@ -276,7 +272,7 @@ def game_loop(map_: Map) -> None:
 
     zoom: float = DEFAULT_ZOOM
     pan: pg.Vector2 = _initial_pan(base_positions, zoom, screen)
-    target_pan: pg.Vector2 = pg.Vector2(pan)
+    target_pan = pg.Vector2(pan)
 
     hubs: list[HubSprite]
     hub_by_name: dict[str, HubSprite]
@@ -288,7 +284,8 @@ def game_loop(map_: Map) -> None:
 
     while True:
         for event in pg.event.get():
-            if event.type == QUIT:
+            keys = pg.key.get_pressed()
+            if event.type == QUIT or keys[pg.K_q]:
                 pg.quit()
                 sys.exit()
 
@@ -326,7 +323,6 @@ def game_loop(map_: Map) -> None:
         _draw_connections(screen, map_, screen_positions)
         _update_sprite_positions(hub_by_name, screen_positions)
         all_sprites.draw(screen)
-        screen.blit(drone, drone_rect)
 
         pg.display.flip()
         clock.tick(FPS)
