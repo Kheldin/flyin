@@ -9,10 +9,20 @@ class HubSprite(pg.sprite.Sprite):
     def __init__(self, *groups: pg.sprite.AbstractGroup[Any]) -> None:
         super().__init__(*groups)
 
-    def setup(self, hub: Hub, center: tuple[int, int]) -> None:
+    def setup(self, hub: Hub, center: tuple[int, int], size: int = 40) -> None:
+        """Initialize sprite visuals using hub properties.
+
+        - `size` controls the surface size (diameter) used for the circle.
+        - Hub color is respected using the `hub.color` value.
+        """
         self.hub = hub
-        self.image = pg.Surface((40, 40), pg.SRCALPHA)
-        pg.draw.circle(self.image, (0, 0, 255), (20, 20), 20)
+        diameter = max(4, int(size))
+        self.image = pg.Surface((diameter, diameter), pg.SRCALPHA)
+        try:
+            color = pg.Color(hub.color.value)
+        except Exception:
+            color = (0, 0, 255)
+        pg.draw.circle(self.image, color, (diameter // 2, diameter // 2), diameter // 2)
         self.rect = self.image.get_rect(center=center)
 
     def update(self):
