@@ -14,8 +14,8 @@ BLACK: tuple[int, int, int] = (0, 0, 0)
 WHITE: tuple[int, int, int] = (255, 255, 255)
 
 # Display
-SCREEN_WIDTH: int = 1280
-SCREEN_HEIGHT: int = 720
+SCREEN_WIDTH: int = 1920
+SCREEN_HEIGHT: int = 1080
 
 # Physics
 FPS: int = 60
@@ -154,6 +154,30 @@ def _update_sprite_positions(
             sprite.rect.center = pos
 
 
+def _draw_hub_drone_counts(
+    screen: pg.Surface,
+    hub_by_name: dict[str, HubSprite],
+) -> None:
+    """Draw a centered drone count inside each hub sprite."""
+    font = pg.font.Font(None, 28)
+    outline_offsets = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+
+    for sprite in hub_by_name.values():
+        hub = sprite.hub
+        drone_count = len(hub.drones or [])
+        label = font.render(str(drone_count), True, (255, 255, 255))
+        label_rect = label.get_rect(center=sprite.rect.center)
+
+        for offset_x, offset_y in outline_offsets:
+            outline = font.render(str(drone_count), True, (0, 0, 0))
+            outline_rect = outline.get_rect(
+                center=(sprite.rect.centerx + offset_x, sprite.rect.centery + offset_y)
+            )
+            screen.blit(outline, outline_rect)
+
+        screen.blit(label, label_rect)
+
+
 def game_loop(map_: Map) -> None:
     """Run the main game loop.
 
@@ -177,7 +201,7 @@ def game_loop(map_: Map) -> None:
     hubs: list[HubSprite]
     hub_by_name: dict[str, HubSprite]
     hubs, hub_by_name = _build_hub_sprites(map_, base_positions, camera)
-    all_sprites: pg.sprite.RenderPlain = pg.sprite.RenderPlain(*hubs)
+    hub_sprites: pg.sprite.RenderPlain = pg.sprite.RenderPlain(*hubs)
 
     dragging: bool = False
     last_mouse: pg.Vector2 = pg.Vector2(0, 0)
@@ -213,7 +237,8 @@ def game_loop(map_: Map) -> None:
 
         _draw_connections(screen, map_, screen_positions)
         _update_sprite_positions(hub_by_name, screen_positions)
-        all_sprites.draw(screen)
+        hub_sprites.draw(screen)
+        _draw_hub_drone_counts(screen, hub_by_name)
 
         pg.display.flip()
         clock.tick(FPS)

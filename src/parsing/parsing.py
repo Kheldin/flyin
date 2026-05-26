@@ -71,6 +71,7 @@ def parse_file() -> Map:
             case _:
                 raise ParsingError(line_nb, f"unknown keyword '{keyword}'")
     check_connections_hubs(connections, hubs)
+    
     # Replace hub string references with actual Hub objects in connections
     hub_map = {hub.name: hub for hub in hubs}
     for connection in connections:
@@ -78,6 +79,13 @@ def parse_file() -> Map:
             connection.hub_1 = hub_map[connection.hub_1]
         if isinstance(connection.hub_2, str):
             connection.hub_2 = hub_map[connection.hub_2]
+
+    start_hub = next((hub for hub in hubs if hub.start_hub), None)
+    if start_hub is not None:
+        drones = [Drone(id=index + 1, position=start_hub) for index in range(nb_drones)]
+        for hub in hubs:
+            hub.drones = []
+        start_hub.drones = drones
 
     map = Map(
         nb_drones=nb_drones,
