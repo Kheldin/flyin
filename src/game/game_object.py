@@ -8,8 +8,8 @@ class HubSprite(pg.sprite.Sprite):
     
     def __init__(self, *groups: pg.sprite.AbstractGroup[Any]) -> None:
         super().__init__(*groups)
-        self._aura: pg.Surface | None = None
-        self._aura_offset: int = 0
+        self.aura: pg.Surface | None = None
+        self.aura_offset: int = 0
 
     def setup(self, hub: Hub, center: tuple[int, int], size: int = 100) -> None:
         """Initialize sprite visuals using hub properties.
@@ -52,7 +52,3 @@ class DroneSprite(pg.sprite.Sprite):
 
     def update(self):
         pass
-
-# class HubGroup(pg.sprite.Group):
-#     def __init__(self, *sprites: HubSprite) -> None:
-#         super().__init__(*sprites)
