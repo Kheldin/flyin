@@ -1,8 +1,9 @@
 from parsing.utils import parse_brackets
 from parsing.errors import ConnectionParsingError
-from models.map import Connection, Hub
+from models.map import Node
 
-def parse_connection(line: str, line_nb: int) -> Connection:
+def parse_connection(line: str, line_nb: int) -> tuple[str, str, int]:
+    """Parse a connection line and return tuple of (hub1_name, hub2_name, max_link_capacity)"""
     info = line.split(":")[1].strip().split(" ")
     if len(info) < 1:
         raise ConnectionParsingError(line_nb, "Connections must follow this model: zone1-zone2 OptionnalMetaData['max_link_capacity']")
@@ -23,44 +24,33 @@ def parse_connection(line: str, line_nb: int) -> Connection:
             raise ConnectionParsingError(line_nb, "'max_link_capacity' should be a positive integer.")
     hub1 = info[0].split("-")[0]
     hub2 = info[0].split("-")[1]
-    return Connection(hub_1=hub1, hub_2=hub2, max_link_capacity=max_link_capacity, line=line_nb)
+    return (hub1, hub2, max_link_capacity)
 
 
 def ensure_no_duplicate_connection(
-    connections: list[Connection], connection: Connection, line_nb: int
+    connections: list[tuple[str, str, int]], connection: tuple[str, str, int], line_nb: int
 ) -> None:
-    def endpoint_name(endpoint: Hub | str) -> str:
-        return endpoint.name if isinstance(endpoint, Hub) else endpoint
-
-    new_pair = tuple(
-        sorted((endpoint_name(connection.hub_1),
-                endpoint_name(connection.hub_2)))
-    )
-    for existing_con in connections:
-        existing_pair = tuple(
-            sorted(
-                (endpoint_name(existing_con.hub_1),
-                 endpoint_name(existing_con.hub_2))
-            )
-        )
+    hub1_name, hub2_name, _ = connection
+    new_pair = tuple(sorted((hub1_name, hub2_name)))
+    
+    for existing_hub1, existing_hub2, _ in connections:
+        existing_pair = tuple(sorted((existing_hub1, existing_hub2)))
         if existing_pair == new_pair:
             raise ConnectionParsingError(
                 line_nb,
-                f"Duplicate connection between '{connection.hub_1}' and '{connection.hub_2}'",
+                f"Duplicate connection between '{hub1_name}' and '{hub2_name}'",
             )
 
 
-def check_connections_hubs(connections: list[Connection], hubs: list[Hub]) -> None:
+def check_connections_hubs(connections: list[tuple[str, str, int]], hubs: list[Node]) -> None:
     """After parsing the whole file. We check if all connections hubs are known"""
     unique_hubs: set[str] = set()
     hub_to_line: dict[str, int] = {}
-    for con in connections:
-        hub1_name = con.hub_1.name if isinstance(con.hub_1, Hub) else con.hub_1
-        hub2_name = con.hub_2.name if isinstance(con.hub_2, Hub) else con.hub_2
+    for idx, (hub1_name, hub2_name, _) in enumerate(connections):
         unique_hubs.add(hub1_name)
         unique_hubs.add(hub2_name)
-        hub_to_line[hub1_name] = con.line
-        hub_to_line[hub2_name] = con.line
+        hub_to_line[hub1_name] = idx
+        hub_to_line[hub2_name] = idx
     hub_names = {hub.name for hub in hubs}
     for hub_con in unique_hubs:
         if hub_con not in hub_names:

@@ -1,6 +1,6 @@
 import pygame as pg
-from typing import Any, cast
-from models.map import Drone, Hub
+from typing import Any
+from models.map import Node
 
 
 class HubSprite(pg.sprite.Sprite):
@@ -11,17 +11,17 @@ class HubSprite(pg.sprite.Sprite):
         self.aura: pg.Surface | None = None
         self.aura_offset: int = 0
 
-    def setup(self, hub: Hub, center: tuple[int, int], size: int = 100) -> None:
+    def setup(self, hub: Node, center: tuple[int, int], size: int = 100) -> None:
         """Initialize sprite visuals using hub properties.
 
         - `size` controls the surface size (diameter) used for the circle.
-        - Hub color is respected using the `hub.color` value.
+        - Hub color is respected using the `hub.metadata.color` value.
         """
         self.hub = hub
         diameter = max(4, int(size))
         self.image = pg.Surface((diameter, diameter), pg.SRCALPHA)
         try:
-            raw_color = cast(str, getattr(hub.color, "value", hub.color))
+            raw_color = hub.metadata.color if hub.metadata.color else "red"
             color = pg.Color(raw_color)
         except Exception:
             color = pg.Color("red")
@@ -38,8 +38,8 @@ class DroneSprite(pg.sprite.Sprite):
     def __init__(self, *groups: pg.sprite.AbstractGroup[Any]) -> None:
         super().__init__(*groups)
 
-    def setup(self, drone: Drone, center: tuple[int, int], size: int = 10) -> None:
-        self.drone = drone
+    def setup(self, drone_id: int, center: tuple[int, int], size: int = 10) -> None:
+        self.drone_id = drone_id
         edge = max(4, int(size))
         self.image = pg.Surface((edge, edge), pg.SRCALPHA)
         # Soft dark square with white outline

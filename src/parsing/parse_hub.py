@@ -1,8 +1,8 @@
-from models.map import Hub, ZoneType
+from models.map import Node, Metadata, Zone
 from parsing.errors import ParsingError, HubParsingError
 from parsing.utils import parse_brackets
 
-def parse_hub(line: str, line_nb: int, start: bool, end: bool) -> Hub:
+def parse_hub(line: str, line_nb: int, start: bool, end: bool) -> Node:
     valid_meta_keys = ["zone", "max_drones", "color"]
     info = line.split(":")[1].strip().split(" ")
     if len(info) < 3:
@@ -16,9 +16,9 @@ def parse_hub(line: str, line_nb: int, start: bool, end: bool) -> Hub:
     except Exception as e:
         raise ParsingError(line_nb, f"{e.__repr__()}\n"
                            f"Hubs must follow this model: name x y OptionnalMetaData{valid_meta_keys}")
-    zone: ZoneType = ZoneType.NORMAL
-    color: str = "red"
-    max_drones: int = 1
+    zone: Zone | None = Zone.NORMAL
+    color: str | None = "red"
+    max_drones: int | None = 1
     if len(info) >= 4:
         meta_data = parse_brackets(info[3::], line_nb)
         for key in meta_data.keys():
@@ -29,9 +29,9 @@ def parse_hub(line: str, line_nb: int, start: bool, end: bool) -> Hub:
                 )
             if key == "zone":
                 try:
-                    zone = ZoneType(meta_data["zone"])
-                except ValueError:
-                    valid = [z.value for z in ZoneType]
+                    zone = Zone.get_zone(meta_data["zone"])
+                except Exception:
+                    valid = ["normal", "restricted", "priority", "blocked"]
                     raise ParsingError(line_nb, f"Zone '{meta_data['zone']}' is invalid. Valid zones: {valid}")
             elif key == "color":
                 # Accept any string for color; it's stored as-is and defaults to 'red'
@@ -44,12 +44,11 @@ def parse_hub(line: str, line_nb: int, start: bool, end: bool) -> Hub:
                 except Exception as e:
                     raise ParsingError(line_nb, e.__repr__())
 
-    return Hub(name=name, x=pos_x, y=pos_y,
-               zone=zone, max_drones=int(max_drones), color=color,
-               start_hub=start, end_hub=end, line=line_nb)
+    metadata = Metadata(zone=zone, color=color, max_link_capacity=None, max_drones=max_drones)
+    return Node(name=name, x=pos_x, y=pos_y, metadata=metadata)
 
 
-def ensure_no_duplicate_hub(hubs: list[Hub], hub: Hub, line_nb: int) -> None:
+def ensure_no_duplicate_hub(hubs: list[Node], hub: Node, line_nb: int) -> None:
     for existing_hub in hubs:
         if existing_hub.name == hub.name:
             raise ParsingError(line_nb, f"Duplicate hub name: '{hub.name}'")
