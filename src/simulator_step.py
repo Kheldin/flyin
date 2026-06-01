@@ -102,7 +102,7 @@ class PathFinder:
         for location, time in path:
             if isinstance(location, Node):
                 self.state.reserve_node(location, time, drone_id)
-            elif isinstance(location, Connection):
+            elif isinstance(location, Connection): # type: ignore
                 self.state.reserve_connection(location, time, drone_id)
 
     def _heuristic(self, node: Node) -> int:
@@ -175,6 +175,7 @@ class Simulator:
         self.map = map_data
         self.total = self.map.nb_drones
         self.delivered = 0
+        self.failed = 0
         self.turn = 0
 
         # Delegate pathfinding and reservation logic to the new object-based PathFinder
@@ -185,6 +186,14 @@ class Simulator:
         self.drone_schedules: Dict[int, Dict[int, Node | Connection]] = {}
         for drone_id, path in self.path_finder.drones_paths.items():
             self.drone_schedules[drone_id] = {time: loc for loc, time in path}
+
+        # Drones with no path are marked as failed so simulation can terminate cleanly.
+        self.failed_drones: Set[int] = {
+            drone_id
+            for drone_id in range(1, self.total + 1)
+            if drone_id not in self.drone_schedules
+        }
+        self.failed = len(self.failed_drones)
 
         # Track state metrics
         self.current_locations: Dict[int, Node | Connection] = {
@@ -205,13 +214,13 @@ class Simulator:
         Returns (is_finished, moves) where moves is a list of strings describing each drone's move.
         Format: "<drone_id>-<hub_name>" or "<drone_id>-<from>-<to>"
         """
-        if self.delivered >= self.total:
+        if self.delivered + self.failed >= self.total:
             return True, []
 
         moves: List[str] = []
 
         for drone_id in range(1, self.total + 1):
-            if drone_id in self.is_delivered:
+            if drone_id in self.is_delivered or drone_id in self.failed_drones:
                 continue
 
             schedule = self.drone_schedules.get(drone_id, {})
@@ -233,7 +242,7 @@ class Simulator:
                         self.is_delivered.add(drone_id)
 
                 # Handling Connection Transit Start
-                elif isinstance(current_step_loc, Connection):
+                elif isinstance(current_step_loc, Connection): # type: ignore
                     prev_loc = self.current_locations[drone_id]
                     if isinstance(prev_loc, Node):
                         frm = prev_loc.name
@@ -245,7 +254,7 @@ class Simulator:
         self.turn += 1
         # Update public runtime views after the turn advances
         self.update_runtime_state()
-        is_finished = self.delivered >= self.total
+        is_finished = (self.delivered + self.failed) >= self.total
 
         return is_finished, moves
 
