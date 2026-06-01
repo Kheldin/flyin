@@ -12,8 +12,8 @@ def main():
         print(f"Finding paths for {map.nb_drones} drones...", flush=True)
         try:
             pathfinder = PathFinder(map)
-            pathfinder.route_all_drones()
-            print(f"Successfully computed paths for {len(pathfinder.drones_paths)} drones", flush=True)
+            # pathfinder.route_all_drones()
+            # print(f"Successfully computed paths for {len(pathfinder.drones_paths)} drones", flush=True)
             for drone_id, path in sorted(pathfinder.drones_paths.items()):
                 print(f"  Drone {drone_id}: {len(path)} steps")
         except PathError as e:

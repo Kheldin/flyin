@@ -5,7 +5,7 @@ import pygame as pg
 from pygame.locals import QUIT, KEYDOWN, K_q, K_SPACE, K_RIGHT, K_LEFT, K_r
 
 from simulator_step import Simulator
-from models.map import Connection, Map
+from models.map import Node, Connection, Map
 from game.camera import Camera
 
 
@@ -123,7 +123,11 @@ def game_loop(initial_map: Map) -> None:
 
         drone_count_per_hub: dict[str, int] = {}
         for hub in map_.hubs:
-            drone_count_per_hub[hub.name] = sum(1 for d_node in sim.drone_positions.values() if d_node.name == hub.name)
+            drone_count_per_hub[hub.name] = sum(
+                1
+                for d_node in sim.drone_positions.values()
+                if isinstance(d_node, Node) and d_node.name == hub.name
+            )
         
         # Collect drones on connections (in-transit)
         drones_on_connections: dict[tuple[str, str], list[int]] = {}
@@ -132,10 +136,11 @@ def game_loop(initial_map: Map) -> None:
             conn = in_transit_entry.get('conn')
             if drone_id and conn:
                 # conn is a tuple (hub1_name, hub2_name)
-                key: tuple[str, str] = (tuple(sorted(conn)))  # type: ignore
+                key: tuple[str, str] = tuple(sorted(conn))  # type: ignore
                 if key not in drones_on_connections:
                     drones_on_connections[key] = []
-                drones_on_connections[key].append(drone_id)
+                if isinstance(drone_id, int):
+                    drones_on_connections[key].append(drone_id)
 
         size_with_zoom = scale_value(BASE_HUB_DIAMETER, camera.zoom)
         for name, sprite in hub_by_name.items():
