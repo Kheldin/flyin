@@ -1,4 +1,4 @@
-from parsing.utils import parse_brackets
+from parsing.parse_brackets import parse_brackets
 from parsing.errors import ConnectionParsingError
 from models.map import Node
 

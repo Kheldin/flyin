@@ -21,7 +21,6 @@ def parse_file() -> Map:
 
     hubs: list[Node] = []
     connections: list[tuple[str, str, int]] = []
-    connection_lines: list[int] = []
     first_kw = 1
     nb_drones = 0
     start_hub: Node | None = None
@@ -54,7 +53,6 @@ def parse_file() -> Map:
                     raise ConnectionParsingError(line_nb, f"Unknown hub: '{missing}'")
                 ensure_no_duplicate_connection(connections, connection, line_nb)
                 connections.append(connection)
-                connection_lines.append(line_nb)
             case "start_hub":
                 hub = parse_hub(line, line_nb, True, False)
                 ensure_no_duplicate_hub(hubs, hub, line_nb)

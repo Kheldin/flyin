@@ -5,7 +5,7 @@ import pygame as pg
 from pygame.locals import QUIT, KEYDOWN, K_q, K_SPACE, K_RIGHT, K_LEFT, K_r
 
 from simulator_step import Simulator
-from models.map import Node, Connection, Map
+from models.map import Node, Map
 from game.camera import Camera
 
 
@@ -18,7 +18,6 @@ BG_COLOR: tuple[int, int, int] = (13, 17, 23)
 from game.draw import (
     BASE_HUB_DIAMETER,
     scale_value,
-    get_hub_name,
     compute_base_hub_pixels,
     build_hub_sprites,
     draw_grid,
@@ -40,7 +39,6 @@ def game_loop(initial_map: Map) -> None:
 
     map_ = deepcopy(initial_map)
     sim = Simulator(map_)  # Live simulator: shows intermediate steps
-    sim_fast = Simulator(deepcopy(initial_map))  # Fast simulator: computes final state immediately
     sim_running = True
     sim_finished_printed = False
 
@@ -50,21 +48,15 @@ def game_loop(initial_map: Map) -> None:
     hubs, hub_by_name = build_hub_sprites(map_, base_positions, camera)
     hub_sprites = pg.sprite.RenderPlain(*hubs)
 
-    connection_map: dict[frozenset[str], Connection] = {
-        frozenset([get_hub_name(c.node1), get_hub_name(c.node2)]): c
-        for c in map_.connections
-    }
-
     dragging = False
     last_mouse = pg.Vector2(0, 0)
 
     def _rebuild_runtime_state() -> None:
-        nonlocal map_, sim, sim_fast, sim_running, sim_finished_printed, sim_acc
-        nonlocal base_positions, hubs, hub_by_name, hub_sprites, connection_map
+        nonlocal map_, sim, sim_running, sim_finished_printed, sim_acc
+        nonlocal base_positions, hubs, hub_by_name, hub_sprites
 
         map_ = deepcopy(initial_map)
         sim = Simulator(map_)
-        sim_fast = Simulator(deepcopy(initial_map))
         sim_running = True
         sim_finished_printed = False
         sim_acc = 0.0
@@ -73,11 +65,6 @@ def game_loop(initial_map: Map) -> None:
 
         hubs, hub_by_name = build_hub_sprites(map_, base_positions, camera)
         hub_sprites = pg.sprite.RenderPlain(*hubs)
-
-        connection_map = {
-            frozenset([get_hub_name(c.node1), get_hub_name(c.node2)]): c
-            for c in map_.connections
-        }
 
     while True:
         for event in pg.event.get():

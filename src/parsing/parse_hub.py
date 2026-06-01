@@ -1,6 +1,6 @@
 from models.map import Node, Metadata, Zone
 from parsing.errors import ParsingError, HubParsingError
-from parsing.utils import parse_brackets
+from parsing.parse_brackets import parse_brackets
 
 def parse_hub(line: str, line_nb: int, start: bool, end: bool) -> Node:
     valid_meta_keys = ["zone", "max_drones", "color"]
