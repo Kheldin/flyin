@@ -1,11 +1,12 @@
 """Main game loop and rendering for FlyIn."""
 
 import functools
+from copy import deepcopy
 import sys
 from typing import Any
 
 import pygame as pg
-from pygame.locals import QUIT, KEYDOWN, K_q, K_SPACE, K_RIGHT, K_LEFT
+from pygame.locals import QUIT, KEYDOWN, K_q, K_SPACE, K_RIGHT, K_LEFT, K_r
 
 from game.camera import Camera, DEFAULT_ZOOM
 from simulator_step import Simulator
@@ -122,7 +123,7 @@ def _get_hub_name(hub_or_str: Hub | str) -> str:
 def _resolve_hub_color(hub: Hub) -> pg.Color:
     try:
         return pg.Color(hub.color)
-    except Exception:
+    except Exception:# Ralentir
         return pg.Color("red")
 
 
@@ -255,6 +256,8 @@ def game_loop(map_: Map) -> None:
     pg.display.set_caption("FlyIn - Simulation Visualizer")
 
     clock = pg.time.Clock()
+
+    initial_map = deepcopy(map_)
     
     # Paramètres de simulation
     sim_tick: float = 0.5
@@ -281,6 +284,27 @@ def game_loop(map_: Map) -> None:
     dragging = False
     last_mouse = pg.Vector2(0, 0)
 
+    def _rebuild_runtime_state() -> None:
+        nonlocal map_, sim, sim_running, sim_finished_printed, sim_acc
+        nonlocal base_positions, camera, hubs, hub_by_name, hub_sprites, connection_map
+
+        map_ = deepcopy(initial_map)
+        sim = Simulator(map_)
+        sim_running = True
+        sim_finished_printed = False
+        sim_acc = 0.0
+
+        base_positions = _compute_base_hub_pixels(map_, screen)
+        camera = Camera(screen, base_positions)
+
+        hubs, hub_by_name = _build_hub_sprites(map_, base_positions, camera)
+        hub_sprites = pg.sprite.RenderPlain(*hubs)
+
+        connection_map = {
+            frozenset([_get_hub_name(c.hub_1), _get_hub_name(c.hub_2)]): c
+            for c in map_.connections
+        }
+
     while True:
         for event in pg.event.get():
             if event.type == QUIT:
@@ -290,15 +314,20 @@ def game_loop(map_: Map) -> None:
                 if event.key == K_q:
                     pg.quit()
                     sys.exit()
-                elif event.key == K_SPACE:  # Espace pour Play/Pause
+                elif event.key == K_SPACE:
                     sim_paused = not sim_paused
                     print("Simulation " + ("en pause" if sim_paused else "reprise"))
-                elif event.key == K_RIGHT:  # Accélérer
+                elif event.key == K_RIGHT:
                     sim_tick = max(0.05, sim_tick - 0.1)
                     print(f"Vitesse simul: {sim_tick:.2f}s/tour")
-                elif event.key == K_LEFT:   # Ralentir
+                elif event.key == K_LEFT:
                     sim_tick = min(2.0, sim_tick + 0.1)
                     print(f"Vitesse simul: {sim_tick:.2f}s/tour")
+                elif event.key == K_r:
+                    _rebuild_runtime_state()
+                    dragging = False
+                    last_mouse = pg.Vector2(0, 0)
+                    print("Restarting Simulation")
             elif event.type == pg.MOUSEWHEEL:
                 camera.handle_zoom_event(event)
             elif event.type == pg.MOUSEBUTTONDOWN and event.button == 1:
