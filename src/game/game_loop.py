@@ -39,7 +39,8 @@ def game_loop(initial_map: Map) -> None:
     sim_paused: bool = False
 
     map_ = deepcopy(initial_map)
-    sim = Simulator(map_)
+    sim = Simulator(map_)  # Live simulator: shows intermediate steps
+    sim_fast = Simulator(deepcopy(initial_map))  # Fast simulator: computes final state immediately
     sim_running = True
     sim_finished_printed = False
 
@@ -58,11 +59,12 @@ def game_loop(initial_map: Map) -> None:
     last_mouse = pg.Vector2(0, 0)
 
     def _rebuild_runtime_state() -> None:
-        nonlocal map_, sim, sim_running, sim_finished_printed, sim_acc
+        nonlocal map_, sim, sim_fast, sim_running, sim_finished_printed, sim_acc
         nonlocal base_positions, hubs, hub_by_name, hub_sprites, connection_map
 
         map_ = deepcopy(initial_map)
         sim = Simulator(map_)
+        sim_fast = Simulator(deepcopy(initial_map))
         sim_running = True
         sim_finished_printed = False
         sim_acc = 0.0
@@ -122,6 +124,18 @@ def game_loop(initial_map: Map) -> None:
         drone_count_per_hub: dict[str, int] = {}
         for hub in map_.hubs:
             drone_count_per_hub[hub.name] = sum(1 for d_node in sim.drone_positions.values() if d_node.name == hub.name)
+        
+        # Collect drones on connections (in-transit)
+        drones_on_connections: dict[tuple[str, str], list[int]] = {}
+        for in_transit_entry in sim.in_transit:
+            drone_id = in_transit_entry.get('drone_id')
+            conn = in_transit_entry.get('conn')
+            if drone_id and conn:
+                # conn is a tuple (hub1_name, hub2_name)
+                key: tuple[str, str] = (tuple(sorted(conn)))  # type: ignore
+                if key not in drones_on_connections:
+                    drones_on_connections[key] = []
+                drones_on_connections[key].append(drone_id)
 
         size_with_zoom = scale_value(BASE_HUB_DIAMETER, camera.zoom)
         for name, sprite in hub_by_name.items():
@@ -132,7 +146,7 @@ def game_loop(initial_map: Map) -> None:
         draw_auras(screen, hub_by_name)
         hub_sprites.draw(screen)
         draw_hub_labels(screen, hub_by_name, camera.zoom, drone_count_per_hub)
-        draw_connection_drone_counts(screen, map_, screen_positions, camera.zoom)
+        draw_connection_drone_counts(screen, map_, screen_positions, drones_on_connections, camera.zoom)
 
         pg.display.flip()
         

@@ -224,9 +224,43 @@ def _draw_hub_labels(screen: pg.Surface, hub_by_name: dict[str, HubSprite], zoom
         _draw_label(screen, str(drone_count), count_font, count_center, text_color=(c.r, c.g, c.b), border_color=(c.r, c.g, c.b, 160))
 
 
-def _draw_connection_drone_counts(screen: pg.Surface, map_: Map, screen_positions: dict[str, tuple[int, int]], zoom: float) -> None:
-    # Drone count visualization for connections is no longer supported by the dataclass-based Map structure
-    pass
+def _draw_drone_on_connections(screen: pg.Surface, map_: Map, screen_positions: dict[str, tuple[int, int]], drones_on_connections: dict[tuple[str, str], list[int]] | None = None, zoom: float = 1.0) -> None:
+    """Draw drone indicators on connections based on in-transit state."""
+    if drones_on_connections is None:
+        drones_on_connections = {}
+    
+    surf = pg.Surface(screen.get_size(), pg.SRCALPHA)
+    font = pg.font.Font(None, max(12, int(14 * (zoom / 1.0))))
+    
+    for conn in map_.connections:
+        s1 = screen_positions.get(_get_hub_name(conn.node1))
+        s2 = screen_positions.get(_get_hub_name(conn.node2))
+        if s1 is None or s2 is None:
+            continue
+        
+        # Get drone IDs on this connection
+        conn_key: tuple[str, str] = (tuple(sorted([_get_hub_name(conn.node1), _get_hub_name(conn.node2)])))  # type: ignore
+        drone_ids = drones_on_connections.get(conn_key, [])
+        
+        if drone_ids:
+            # Draw indicator at midpoint showing count
+            mid_x, mid_y = (s1[0] + s2[0]) // 2, (s1[1] + s2[1]) // 2
+            text = f"x{len(drone_ids)}"
+            text_surf = font.render(text, True, CONN_BADGE_TEXT)
+            text_rect = text_surf.get_rect(center=(mid_x, mid_y))
+            
+            # Background badge
+            badge_rect = text_rect.inflate(8, 6)
+            pg.draw.rect(surf, (*CONN_BADGE_BORDER[:3], 200), badge_rect, border_radius=4)
+            pg.draw.rect(surf, CONN_BADGE_BORDER, badge_rect, width=1, border_radius=4)
+            surf.blit(text_surf, text_rect)
+    
+    screen.blit(surf, (0, 0))
+
+
+def _draw_connection_drone_counts(screen: pg.Surface, map_: Map, screen_positions: dict[str, tuple[int, int]], drones_on_connections: dict[tuple[str, str], list[int]] | None = None, zoom: float = 1.0) -> None:
+    """Render drones on connections."""
+    _draw_drone_on_connections(screen, map_, screen_positions, drones_on_connections, zoom)
 
 
 # Public aliases (avoid importing private names from this module)
@@ -240,4 +274,5 @@ draw_connections = _draw_connections
 draw_auras = _draw_auras
 draw_label = _draw_label
 draw_hub_labels = _draw_hub_labels
+draw_drone_on_connections = _draw_drone_on_connections
 draw_connection_drone_counts = _draw_connection_drone_counts
