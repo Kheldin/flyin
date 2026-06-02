@@ -1,20 +1,11 @@
 from copy import deepcopy
 import sys
-
 import pygame as pg
 from pygame.locals import QUIT, KEYDOWN, K_q, K_SPACE, K_RIGHT, K_LEFT, K_r
 
 from simulator_step import Simulator
 from models.map import Node, Map
 from game.camera import Camera
-
-
-# --- Constants ---
-SCREEN_WIDTH: int = 1920
-SCREEN_HEIGHT: int = 1080
-FPS: int = 60
-BG_COLOR: tuple[int, int, int] = (13, 17, 23)
-
 from game.draw import (
     BASE_HUB_DIAMETER,
     scale_value,
@@ -27,6 +18,10 @@ from game.draw import (
     draw_drone_on_connections
 )
 
+SCREEN_WIDTH: int = 1920
+SCREEN_HEIGHT: int = 1080
+FPS: int = 60
+BG_COLOR: tuple[int, int, int] = (13, 17, 23)
 
 def game_loop(initial_map: Map) -> None:
     screen = pg.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pg.RESIZABLE)
@@ -62,9 +57,12 @@ def game_loop(initial_map: Map) -> None:
         sim_acc = 0.0
 
         base_positions = compute_base_hub_pixels(map_, screen)
-
         hubs, hub_by_name = build_hub_sprites(map_, base_positions, camera)
         hub_sprites = pg.sprite.RenderPlain(*hubs)
+        clock.tick(FPS)  # Clear lag after restarts too
+
+    # FIX: Flush window generation lag so frame 1 starts cleanly at 0.0s elapsed
+    clock.tick(FPS)
 
     while True:
         for event in pg.event.get():
@@ -99,14 +97,28 @@ def game_loop(initial_map: Map) -> None:
             elif event.type == pg.MOUSEMOTION and dragging:
                 last_mouse = camera.drag_pan(last_mouse, event.pos)
 
+        dt = clock.tick(FPS) / 500.0
+        
+        if not sim_paused:
+            sim_acc += dt
+            if sim_acc >= sim_tick:
+                sim_acc -= sim_tick
+                if sim_running:
+                    is_finished, moves = sim.step()
+                    if moves:
+                        print(" ".join(moves))
+                    
+                    if is_finished and not sim_finished_printed:
+                        print(
+                            f"Finished in {sim.turn} turns "
+                            f"(Delivered: {sim.delivered}/{sim.total}, Failed: {sim.failed})"
+                        )
+                        sim_finished_printed = True
+                        sim_running = False
+
         camera.update()
 
-        screen.fill(BG_COLOR)
-        draw_grid(screen)
-
         screen_positions = {name: camera.world_to_screen(base) for name, base in base_positions.items()}
-
-        draw_connections(screen, map_, screen_positions, camera.zoom)
 
         drone_count_per_hub: dict[str, int] = {}
         for hub in map_.hubs:
@@ -116,13 +128,11 @@ def game_loop(initial_map: Map) -> None:
                 if isinstance(d_node, Node) and d_node.name == hub.name
             )
         
-        # Collect drones on connections (in-transit)
         drones_on_connections: dict[tuple[str, str], list[int]] = {}
         for in_transit_entry in sim.in_transit:
             drone_id = in_transit_entry.get('drone_id')
             conn = in_transit_entry.get('conn')
             if drone_id and conn:
-                # conn is a tuple (hub1_name, hub2_name)
                 key: tuple[str, str] = tuple(sorted(conn))  # type: ignore
                 if key not in drones_on_connections:
                     drones_on_connections[key] = []
@@ -133,35 +143,18 @@ def game_loop(initial_map: Map) -> None:
         for name, sprite in hub_by_name.items():
             pos = screen_positions.get(name)
             if pos is not None:
-                sprite.setup(sprite.hub, pos, size=size_with_zoom)
+                count = drone_count_per_hub.get(name, 0)
+                sprite.setup(sprite.hub, pos, size=size_with_zoom, drone_count=count)
 
+        hub_sprites.update()
+
+        # Rendering
+        screen.fill(BG_COLOR)
+        draw_grid(screen)
+        draw_connections(screen, map_, screen_positions, camera.zoom)
         draw_auras(screen, hub_by_name)
         hub_sprites.draw(screen)
         draw_hub_labels(screen, hub_by_name, camera.zoom, drone_count_per_hub)
         draw_drone_on_connections(screen, map_, screen_positions, drones_on_connections, camera.zoom)
 
         pg.display.flip()
-        
-        dt = clock.tick(FPS) / 500.0
-        
-        if not sim_paused:
-            sim_acc += dt
-
-            if sim_acc >= sim_tick:
-                sim_acc -= sim_tick
-                
-                if sim_running:
-                    is_finished, moves = sim.step()
-                else:
-                    is_finished, moves = True, []
-                
-                if moves:
-                    print(" ".join(moves))
-                
-                if is_finished and not sim_finished_printed:
-                    print(
-                        f"Finished in {sim.turn} turns "
-                        f"(Delivered: {sim.delivered}/{sim.total}, Failed: {sim.failed})"
-                    )
-                    sim_finished_printed = True
-                    sim_running = False

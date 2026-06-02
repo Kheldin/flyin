@@ -4,33 +4,62 @@ from models.map import Node
 
 
 class HubSprite(pg.sprite.Sprite):
-    """Hub sprite class"""
-    
     def __init__(self, *groups: pg.sprite.AbstractGroup[Any]) -> None:
         super().__init__(*groups)
+        self.hub: Node
+        self.image: pg.Surface = pg.Surface((0, 0))
+        self.rect: pg.Rect = pg.Rect(0, 0, 0, 0)
         self.aura: pg.Surface | None = None
-        self.aura_offset: int = 0
+        self.is_rainbow: bool = False
+        
+        # State tracking fields decoupled to avoid cache collision
+        self.last_size: int = -1
+        self.last_hub_drone_count: int = -1
+        self.last_label_drone_count: int = -1
+        self.last_zoom: float = -1.0
+        
+        self.name_label: LabelSprite | None = None
+        self.count_label: LabelSprite | None = None
 
-    def setup(self, hub: Node, center: tuple[int, int], size: int = 100) -> None:
-        """Initialize sprite visuals using hub properties.
-
-        - `size` controls the surface size (diameter) used for the circle.
-        - Hub color is respected using the `hub.metadata.color` value.
-        """
+    def setup(self, hub: Node, center: tuple[int, int], size: int = 100, drone_count: int = 0) -> None:
         self.hub = hub
+        self.is_rainbow = (hub.metadata.color or "").lower() == "rainbow"
         diameter = max(4, int(size))
-        self.image = pg.Surface((diameter, diameter), pg.SRCALPHA)
-        try:
-            raw_color = hub.metadata.color if hub.metadata.color else "red"
-            color = pg.Color(raw_color)
-        except Exception:
-            color = pg.Color("red")
-        pg.draw.circle(self.image, color, (diameter // 2, diameter // 2), diameter // 2)
+        color = resolve_hub_color(hub)
+        color_rgb = (color.r, color.g, color.b)
+
+        if drone_count > 0:
+            aura_r = max(1, diameter // 2 + (diameter // 5))
+            self.aura = _get_aura_surface(aura_r, color_rgb, HUB_GLOW_ALPHA)
+        else:
+            self.aura = None
+
+        # Uses isolated hub property tracking
+        if self.last_size != diameter or self.last_hub_drone_count != drone_count or self.is_rainbow:
+            self.image = pg.Surface((diameter, diameter), pg.SRCALPHA)
+            pg.draw.circle(self.image, color, (diameter // 2, diameter // 2), diameter // 2)
+            
+            inner_dot_r = max(1, diameter // 12)
+            ring_surf = _get_ring_surface(diameter, inner_dot_r)
+            self.image.blit(ring_surf, (0, 0))
+            
+            self.last_size = diameter
+            self.last_hub_drone_count = drone_count
+
         self.rect = self.image.get_rect(center=center)
 
-    def update(self):
-        pass
-
+    def update(self, *args: Any, **kwargs: Any) -> None:
+        if self.is_rainbow:
+            diameter = max(4, self.rect.width)
+            color = resolve_hub_color(self.hub)
+            self.image = pg.Surface((diameter, diameter), pg.SRCALPHA)
+            pg.draw.circle(self.image, color, (diameter // 2, diameter // 2), diameter // 2)
+            inner_dot_r = max(1, diameter // 12)
+            ring_surf = _get_ring_surface(diameter, inner_dot_r)
+            self.image.blit(ring_surf, (0, 0))
+            if self.last_hub_drone_count > 0:
+                aura_r = max(1, diameter // 2 + (diameter // 5))
+                self.aura = _get_aura_surface(aura_r, (color.r, color.g, color.b), HUB_GLOW_ALPHA)
 
 class DroneSprite(pg.sprite.Sprite):
     """Drone sprite class"""

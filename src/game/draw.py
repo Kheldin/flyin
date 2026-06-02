@@ -243,14 +243,13 @@ def draw_hub_labels(screen: pg.Surface, hub_by_name: dict[str, HubSprite], zoom:
         hub = sprite.hub
         drone_count = drone_count_per_hub.get(hub.name, 0)
         
-        # Calculate centers every frame to account for camera movement/panning
         offset = max(18, sprite.rect.height // 2 + LABEL_GAP * 3)
         name_center = (sprite.rect.centerx, sprite.rect.centery - offset)
         count_center = (sprite.rect.centerx, sprite.rect.centery + offset)
         
-        # Re-instantiate if attributes change OR if rainbow state requests real-time palette refreshes
+        # Uses isolated label property tracking
         if (sprite.last_zoom != zoom or 
-            sprite.last_drone_count != drone_count or 
+            sprite.last_label_drone_count != drone_count or 
             sprite.is_rainbow or
             sprite.name_label is None or 
             sprite.count_label is None):
@@ -262,7 +261,6 @@ def draw_hub_labels(screen: pg.Surface, hub_by_name: dict[str, HubSprite], zoom:
             sprite.name_label = LabelSprite()
             sprite.name_label.setup(hub.name, name_font, center=name_center, border_color=LABEL_BORDER_COLOR)
             
-            # The count badge updates color properties in lockstep with spectrum rules
             sprite.count_label = LabelSprite()
             sprite.count_label.setup(
                 text=str(drone_count), 
@@ -272,13 +270,11 @@ def draw_hub_labels(screen: pg.Surface, hub_by_name: dict[str, HubSprite], zoom:
                 border_color=(c.r, c.g, c.b, 160)
             )
             sprite.last_zoom = zoom
-            sprite.last_drone_count = drone_count
+            sprite.last_label_drone_count = drone_count
         else:
-            # Panning update: Keep the same pre-rendered image, just shift its screen position
             sprite.name_label.rect.center = name_center
             sprite.count_label.rect.center = count_center
 
-        # Render labels onto the screen canvas
         screen.blit(sprite.name_label.image, sprite.name_label.rect)
         screen.blit(sprite.count_label.image, sprite.count_label.rect)
 
