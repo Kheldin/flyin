@@ -74,8 +74,20 @@ def get_hub_name(hub_or_str: Node | str) -> str:
 
 
 def resolve_hub_color(hub: Node) -> pg.Color:
-    print(pg.Color(hub.metadata.color or "red"))
-    return pg.Color(hub.metadata.color or "red")
+    """Resolves string types to pg.Color instances, computing dynamic HSV spectrums for rainbows."""
+    color_str = (hub.metadata.color or "red").lower()
+    
+    if color_str == "rainbow":
+        ticks = pg.time.get_ticks()
+        hue = (ticks // 4) % 360  # Modulates cycle animation speed
+        color = pg.Color(0)
+        color.hsva = (hue, 90, 100, 100)
+        return color
+        
+    try:
+        return pg.Color(color_str)
+    except ValueError:
+        return pg.Color("red")
 
 
 class HubSprite(pg.sprite.Sprite):
@@ -85,6 +97,7 @@ class HubSprite(pg.sprite.Sprite):
         self.image: pg.Surface = pg.Surface((0, 0))
         self.rect: pg.Rect = pg.Rect(0, 0, 0, 0)
         self.aura: pg.Surface | None = None
+        self.is_rainbow: bool = False
         
         # State tracking fields for layout optimizations
         self.last_size: int = -1
@@ -97,6 +110,7 @@ class HubSprite(pg.sprite.Sprite):
 
     def setup(self, hub: Node, center: tuple[int, int], size: int = 100, drone_count: int = 0) -> None:
         self.hub = hub
+        self.is_rainbow = (hub.metadata.color or "").lower() == "rainbow"
         diameter = max(4, int(size))
         color = resolve_hub_color(hub)
         color_rgb = (color.r, color.g, color.b)
@@ -108,8 +122,8 @@ class HubSprite(pg.sprite.Sprite):
         else:
             self.aura = None
 
-        # Re-render sprite circles only when geometric sizes shift
-        if self.last_size != diameter or self.last_drone_count != drone_count:
+        # Re-render sprite circles only when geometric sizes shift (Rainbow handles updates in update())
+        if self.last_size != diameter or self.last_drone_count != drone_count or self.is_rainbow:
             self.image = pg.Surface((diameter, diameter), pg.SRCALPHA)
             pg.draw.circle(self.image, color, (diameter // 2, diameter // 2), diameter // 2)
             
@@ -121,6 +135,25 @@ class HubSprite(pg.sprite.Sprite):
             self.last_drone_count = drone_count
 
         self.rect = self.image.get_rect(center=center)
+
+    def update(self, *args: Any, **kwargs: Any) -> None:
+        """Forces runtime surface modifications if the entity's state requires real-time shifts."""
+        if self.is_rainbow:
+            diameter = max(4, self.rect.width)
+            color = resolve_hub_color(self.hub)
+            
+            # Re-render shifting base canvas profile
+            self.image = pg.Surface((diameter, diameter), pg.SRCALPHA)
+            pg.draw.circle(self.image, color, (diameter // 2, diameter // 2), diameter // 2)
+            
+            inner_dot_r = max(1, diameter // 12)
+            ring_surf = _get_ring_surface(diameter, inner_dot_r)
+            self.image.blit(ring_surf, (0, 0))
+            
+            # Keep glow matching spectrum changes
+            if self.last_drone_count > 0:
+                aura_r = max(1, diameter // 2 + (diameter // 5))
+                self.aura = _get_aura_surface(aura_r, (color.r, color.g, color.b), HUB_GLOW_ALPHA)
 
 
 # --- Core Logic & Map Drawing Loops ---
@@ -215,9 +248,10 @@ def draw_hub_labels(screen: pg.Surface, hub_by_name: dict[str, HubSprite], zoom:
         name_center = (sprite.rect.centerx, sprite.rect.centery - offset)
         count_center = (sprite.rect.centerx, sprite.rect.centery + offset)
         
-        # Re-instantiate graphics only when zoom properties or counts fluctuate
+        # Re-instantiate if attributes change OR if rainbow state requests real-time palette refreshes
         if (sprite.last_zoom != zoom or 
             sprite.last_drone_count != drone_count or 
+            sprite.is_rainbow or
             sprite.name_label is None or 
             sprite.count_label is None):
             
@@ -228,6 +262,7 @@ def draw_hub_labels(screen: pg.Surface, hub_by_name: dict[str, HubSprite], zoom:
             sprite.name_label = LabelSprite()
             sprite.name_label.setup(hub.name, name_font, center=name_center, border_color=LABEL_BORDER_COLOR)
             
+            # The count badge updates color properties in lockstep with spectrum rules
             sprite.count_label = LabelSprite()
             sprite.count_label.setup(
                 text=str(drone_count), 
