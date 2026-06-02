@@ -8,7 +8,7 @@ import pygame as pg
 from game.camera import Camera, DEFAULT_ZOOM
 from models.map import Node, Map
 
-# --- Constants (used by drawing utilities) ---
+# --- Constants ---
 BASE_HUB_DIAMETER: int = 100
 BASE_CONNECTION_WIDTH: int = 4
 BASE_NAME_FONT_SIZE: int = 20
@@ -38,9 +38,16 @@ GRID_SPACING: int = 48
 WORLD_SPREAD: float = 1.6
 
 
-# --- Smart Surfaces Caching ---
+# --- Caching Mechanisms ---
+@functools.cache
+def get_font(size: int) -> pg.font.Font:
+    """Prevents continuous system calls by caching Font objects globally."""
+    return pg.font.Font(None, size)
+
+
 @functools.cache
 def _get_aura_surface(radius: int, color_rgb: tuple[int, int, int], alpha: int) -> pg.Surface:
+    """True private helper (kept underscore because it's only used inside HubSprite)."""
     surf = pg.Surface((radius * 2, radius * 2), pg.SRCALPHA)
     pg.draw.circle(surf, (*color_rgb, alpha), (radius, radius), radius)
     return surf
@@ -48,6 +55,7 @@ def _get_aura_surface(radius: int, color_rgb: tuple[int, int, int], alpha: int) 
 
 @functools.cache
 def _get_ring_surface(size: int, inner_dot_radius: int) -> pg.Surface:
+    """True private helper."""
     ring = pg.Surface((size, size), pg.SRCALPHA)
     half = size // 2
     pg.draw.circle(ring, HUB_RING_COLOR, (half, half), max(1, half - 1), width=1)
@@ -55,29 +63,40 @@ def _get_ring_surface(size: int, inner_dot_radius: int) -> pg.Surface:
     return ring
 
 
+# --- Utility Functions ---
+def scale_value(base_value: int, zoom: float) -> int:
+    return max(1, int(base_value * (zoom / DEFAULT_ZOOM)))
+
+
+def get_hub_name(hub_or_str: Node | str) -> str:
+    return hub_or_str.name if isinstance(hub_or_str, Node) else str(hub_or_str)
+
+
+def resolve_hub_color(hub: Node) -> pg.Color:
+    try:
+        color_str = hub.metadata.color if getattr(hub, "metadata", None) and hub.metadata.color else "red"
+        return pg.Color(color_str)
+    except Exception:
+        return pg.Color("red")
+
+
+# --- Classes ---
 class HubSprite(pg.sprite.Sprite):
     def __init__(self, *groups: pg.sprite.AbstractGroup[Any]) -> None:
         super().__init__(*groups)
         self.hub: Node
-        self.image: pg.Surface
-        self.rect: pg.Rect
+        self.image: pg.Surface = pg.Surface((0, 0))
+        self.rect: pg.Rect = pg.Rect(0, 0, 0, 0)
         self.aura: pg.Surface | None = None
         
         self._last_size: int = -1
         self._last_drone_count: int = -1
 
-    def setup(self, hub: Node, center: tuple[int, int], size: int = 100) -> None:
+    def setup(self, hub: Node, center: tuple[int, int], size: int = 100, drone_count: int = 0) -> None:
         self.hub = hub
         diameter = max(4, int(size))
-        
-        try:
-            color_str = hub.metadata.color if hub.metadata.color else "red"
-            color = pg.Color(color_str)
-        except Exception:
-            color = pg.Color("red")
-            
+        color = resolve_hub_color(hub)
         color_rgb = (color.r, color.g, color.b)
-        drone_count = 0
 
         if drone_count > 0:
             aura_r = max(1, diameter // 2 + (diameter // 5))
@@ -99,28 +118,14 @@ class HubSprite(pg.sprite.Sprite):
         self.rect = self.image.get_rect(center=center)
 
 
-def _scale_value(base_value: int, zoom: float) -> int:
-    return max(1, int(base_value * (zoom / DEFAULT_ZOOM)))
-
-
-def _get_hub_name(hub_or_str: Node | str) -> str:
-    return hub_or_str.name if isinstance(hub_or_str, Node) else str(hub_or_str)
-
-
-def _resolve_hub_color(hub: Node) -> pg.Color:
-    try:
-        color_str = hub.metadata.color if hub.metadata.color else "red"
-        return pg.Color(color_str)
-    except Exception:
-        return pg.Color("red")
-
-
-def _compute_base_hub_pixels(map_: Map, screen: pg.Surface, padding: int = 20, spread: float = WORLD_SPREAD) -> dict[str, tuple[float, float]]:
+# --- Core Drawing Functions ---
+def compute_base_hub_pixels(map_: Map, screen: pg.Surface, padding: int = 20, spread: float = WORLD_SPREAD) -> dict[str, tuple[float, float]]:
     if not map_.hubs:
         return {}
 
-    min_x, max_x = min(h.x for h in map_.hubs), max(h.x for h in map_.hubs)
-    min_y, max_y = min(h.y for h in map_.hubs), max(h.y for h in map_.hubs)
+    hubs = map_.hubs
+    min_x, max_x = min(h.x for h in hubs), max(h.x for h in hubs)
+    min_y, max_y = min(h.y for h in hubs), max(h.y for h in hubs)
 
     drawable_w = max(1, screen.get_width() - 2 * padding)
     drawable_h = max(1, screen.get_height() - 2 * padding)
@@ -128,12 +133,13 @@ def _compute_base_hub_pixels(map_: Map, screen: pg.Surface, padding: int = 20, s
 
     base_positions = {
         hub.name: (padding + (hub.x - min_x) / range_x * drawable_w, padding + (hub.y - min_y) / range_y * drawable_h)
-        for hub in map_.hubs
+        for hub in hubs
     }
 
-    xs = [p[0] for p in base_positions.values()]
-    ys = [p[1] for p in base_positions.values()]
-    center_x, center_y = sum(xs) / len(xs), sum(ys) / len(ys)
+    total_x = sum(p[0] for p in base_positions.values())
+    total_y = sum(p[1] for p in base_positions.values())
+    count = len(base_positions)
+    center_x, center_y = total_x / count, total_y / count
 
     return {
         name: (center_x + (px - center_x) * spread, center_y + (py - center_y) * spread)
@@ -141,7 +147,7 @@ def _compute_base_hub_pixels(map_: Map, screen: pg.Surface, padding: int = 20, s
     }
 
 
-def _build_hub_sprites(map_: Map, base_positions: dict[str, tuple[float, float]], camera: Camera) -> tuple[list[HubSprite], dict[str, HubSprite]]:
+def build_hub_sprites(map_: Map, base_positions: dict[str, tuple[float, float]], camera: Camera) -> tuple[list[HubSprite], dict[str, HubSprite]]:
     hubs: list[HubSprite] = []
     hub_by_name: dict[str, HubSprite] = {}
 
@@ -155,9 +161,9 @@ def _build_hub_sprites(map_: Map, base_positions: dict[str, tuple[float, float]]
     return hubs, hub_by_name
 
 
-def _draw_grid(screen: pg.Surface) -> None:
-    surf = pg.Surface(screen.get_size(), pg.SRCALPHA)
+def draw_grid(screen: pg.Surface) -> None:
     w, h = screen.get_size()
+    surf = pg.Surface((w, h), pg.SRCALPHA)
     for x in range(0, w, GRID_SPACING):
         pg.draw.line(surf, GRID_COLOR, (x, 0), (x, h), 1)
     for y in range(0, h, GRID_SPACING):
@@ -165,24 +171,24 @@ def _draw_grid(screen: pg.Surface) -> None:
     screen.blit(surf, (0, 0))
 
 
-def _draw_connections(screen: pg.Surface, map_: Map, screen_positions: dict[str, tuple[int, int]], zoom: float) -> None:
+def draw_connections(screen: pg.Surface, map_: Map, screen_positions: dict[str, tuple[int, int]], zoom: float) -> None:
     surf = pg.Surface(screen.get_size(), pg.SRCALPHA)
     for conn in map_.connections:
-        s1 = screen_positions.get(_get_hub_name(conn.node1))
-        s2 = screen_positions.get(_get_hub_name(conn.node2))
+        s1 = screen_positions.get(get_hub_name(conn.node1))
+        s2 = screen_positions.get(get_hub_name(conn.node2))
         if s1 is None or s2 is None:
             continue
 
-        active = False  # Connection status will be updated from simulator
+        active = getattr(conn, "active", False)
         r, g, b = CONNECTION_COLOR_ACTIVE if active else CONNECTION_COLOR_IDLE
         alpha = CONNECTION_ACTIVE_ALPHA if active else CONNECTION_IDLE_ALPHA
-        width = _scale_value(BASE_CONNECTION_WIDTH if active else 2, zoom)
+        width = scale_value(BASE_CONNECTION_WIDTH if active else 2, zoom)
         pg.draw.line(surf, (r, g, b, alpha), s1, s2, width)
 
     screen.blit(surf, (0, 0))
 
 
-def _draw_auras(screen: pg.Surface, hub_by_name: dict[str, HubSprite]) -> None:
+def draw_auras(screen: pg.Surface, hub_by_name: dict[str, HubSprite]) -> None:
     for sprite in hub_by_name.values():
         if sprite.aura is None:
             continue
@@ -191,7 +197,7 @@ def _draw_auras(screen: pg.Surface, hub_by_name: dict[str, HubSprite]) -> None:
         screen.blit(sprite.aura, (ax, ay))
 
 
-def _draw_label(screen: pg.Surface, text: str, font: pg.font.Font, center: tuple[int, int], text_color: tuple[int, int, int] = LABEL_TEXT_COLOR, border_color: tuple[int, int, int, int] = LABEL_BORDER_COLOR, bg_color: tuple[int, int, int, int] = LABEL_BG_COLOR) -> None:
+def draw_label(screen: pg.Surface, text: str, font: pg.font.Font, center: tuple[int, int], text_color: tuple[int, int, int] = LABEL_TEXT_COLOR, border_color: tuple[int, int, int, int] = LABEL_BORDER_COLOR, bg_color: tuple[int, int, int, int] = LABEL_BG_COLOR) -> None:
     text_surface = font.render(text, True, text_color)
     text_rect = text_surface.get_rect(center=center)
     bg_rect = text_rect.inflate(LABEL_PADDING_X * 2, LABEL_PADDING_Y * 2)
@@ -203,76 +209,52 @@ def _draw_label(screen: pg.Surface, text: str, font: pg.font.Font, center: tuple
     screen.blit(text_surface, text_rect)
 
 
-def _draw_hub_labels(screen: pg.Surface, hub_by_name: dict[str, HubSprite], zoom: float, drone_count_per_hub: dict[str, int] | None = None) -> None:
+def draw_hub_labels(screen: pg.Surface, hub_by_name: dict[str, HubSprite], zoom: float, drone_count_per_hub: dict[str, int] | None = None) -> None:
     if drone_count_per_hub is None:
         drone_count_per_hub = {}
     
-    name_font = pg.font.Font(None, _scale_value(BASE_NAME_FONT_SIZE, zoom))
-    count_font = pg.font.Font(None, _scale_value(BASE_COUNT_FONT_SIZE, zoom))
+    name_font = get_font(scale_value(BASE_NAME_FONT_SIZE, zoom))
+    count_font = get_font(scale_value(BASE_COUNT_FONT_SIZE, zoom))
 
     for sprite in hub_by_name.values():
         hub = sprite.hub
-        c = _resolve_hub_color(hub)
+        c = resolve_hub_color(hub)
         
         offset = max(18, sprite.rect.height // 2 + LABEL_GAP * 3)
         name_center = (sprite.rect.centerx, sprite.rect.centery - offset)
         count_center = (sprite.rect.centerx, sprite.rect.centery + offset)
 
-        _draw_label(screen, hub.name, name_font, name_center, border_color=LABEL_BORDER_COLOR)
+        draw_label(screen, hub.name, name_font, name_center, border_color=LABEL_BORDER_COLOR)
 
         drone_count = drone_count_per_hub.get(hub.name, 0)
-        _draw_label(screen, str(drone_count), count_font, count_center, text_color=(c.r, c.g, c.b), border_color=(c.r, c.g, c.b, 160))
+        draw_label(screen, str(drone_count), count_font, count_center, text_color=(c.r, c.g, c.b), border_color=(c.r, c.g, c.b, 160))
 
 
-def _draw_drone_on_connections(screen: pg.Surface, map_: Map, screen_positions: dict[str, tuple[int, int]], drones_on_connections: dict[tuple[str, str], list[int]] | None = None, zoom: float = 1.0) -> None:
-    """Draw drone indicators on connections based on in-transit state."""
+def draw_drone_on_connections(screen: pg.Surface, map_: Map, screen_positions: dict[str, tuple[int, int]], drones_on_connections: dict[tuple[str, str], list[int]] | None = None, zoom: float = 1.0) -> None:
     if drones_on_connections is None:
         drones_on_connections = {}
     
     surf = pg.Surface(screen.get_size(), pg.SRCALPHA)
-    font = pg.font.Font(None, max(12, int(14 * (zoom / 1.0))))
+    font = get_font(max(12, int(14 * (zoom / 1.0))))
     
     for conn in map_.connections:
-        s1 = screen_positions.get(_get_hub_name(conn.node1))
-        s2 = screen_positions.get(_get_hub_name(conn.node2))
+        s1 = screen_positions.get(get_hub_name(conn.node1))
+        s2 = screen_positions.get(get_hub_name(conn.node2))
         if s1 is None or s2 is None:
             continue
         
-        # Get drone IDs on this connection
-        conn_key: tuple[str, str] = (tuple(sorted([_get_hub_name(conn.node1), _get_hub_name(conn.node2)])))  # type: ignore
-        drone_ids = drones_on_connections.get(conn_key, [])
+        conn_key = tuple(sorted([get_hub_name(conn.node1), get_hub_name(conn.node2)]))
+        drone_ids = drones_on_connections.get(conn_key, [])  # type: ignore
         
         if drone_ids:
-            # Draw indicator at midpoint showing count
             mid_x, mid_y = (s1[0] + s2[0]) // 2, (s1[1] + s2[1]) // 2
             text = f"x{len(drone_ids)}"
             text_surf = font.render(text, True, CONN_BADGE_TEXT)
             text_rect = text_surf.get_rect(center=(mid_x, mid_y))
             
-            # Background badge
             badge_rect = text_rect.inflate(8, 6)
             pg.draw.rect(surf, (*CONN_BADGE_BORDER[:3], 200), badge_rect, border_radius=4)
             pg.draw.rect(surf, CONN_BADGE_BORDER, badge_rect, width=1, border_radius=4)
             surf.blit(text_surf, text_rect)
     
     screen.blit(surf, (0, 0))
-
-
-def _draw_connection_drone_counts(screen: pg.Surface, map_: Map, screen_positions: dict[str, tuple[int, int]], drones_on_connections: dict[tuple[str, str], list[int]] | None = None, zoom: float = 1.0) -> None:
-    """Render drones on connections."""
-    _draw_drone_on_connections(screen, map_, screen_positions, drones_on_connections, zoom)
-
-
-# Public aliases (avoid importing private names from this module)
-scale_value = _scale_value
-get_hub_name = _get_hub_name
-resolve_hub_color = _resolve_hub_color
-compute_base_hub_pixels = _compute_base_hub_pixels
-build_hub_sprites = _build_hub_sprites
-draw_grid = _draw_grid
-draw_connections = _draw_connections
-draw_auras = _draw_auras
-draw_label = _draw_label
-draw_hub_labels = _draw_hub_labels
-draw_drone_on_connections = _draw_drone_on_connections
-draw_connection_drone_counts = _draw_connection_drone_counts

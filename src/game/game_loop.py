@@ -24,7 +24,7 @@ from game.draw import (
     draw_connections,
     draw_auras,
     draw_hub_labels,
-    draw_connection_drone_counts,
+    draw_drone_on_connections
 )
 
 
@@ -38,7 +38,7 @@ def game_loop(initial_map: Map) -> None:
     sim_paused: bool = False
 
     map_ = deepcopy(initial_map)
-    sim = Simulator(map_)  # Live simulator: shows intermediate steps
+    sim = Simulator(map_)
     sim_running = True
     sim_finished_printed = False
 
@@ -138,7 +138,7 @@ def game_loop(initial_map: Map) -> None:
         draw_auras(screen, hub_by_name)
         hub_sprites.draw(screen)
         draw_hub_labels(screen, hub_by_name, camera.zoom, drone_count_per_hub)
-        draw_connection_drone_counts(screen, map_, screen_positions, drones_on_connections, camera.zoom)
+        draw_drone_on_connections(screen, map_, screen_positions, drones_on_connections, camera.zoom)
 
         pg.display.flip()
         
