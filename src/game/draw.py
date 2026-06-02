@@ -7,6 +7,7 @@ import pygame as pg
 
 from game.camera import Camera, DEFAULT_ZOOM
 from models.map import Node, Map
+from game.game_object import LabelSprite
 
 # --- Constants ---
 BASE_HUB_DIAMETER: int = 100
@@ -47,7 +48,7 @@ def get_font(size: int) -> pg.font.Font:
 
 @functools.cache
 def _get_aura_surface(radius: int, color_rgb: tuple[int, int, int], alpha: int) -> pg.Surface:
-    """True private helper (kept underscore because it's only used inside HubSprite)."""
+    """Generates and caches glow aura effects for active hubs."""
     surf = pg.Surface((radius * 2, radius * 2), pg.SRCALPHA)
     pg.draw.circle(surf, (*color_rgb, alpha), (radius, radius), radius)
     return surf
@@ -55,7 +56,7 @@ def _get_aura_surface(radius: int, color_rgb: tuple[int, int, int], alpha: int) 
 
 @functools.cache
 def _get_ring_surface(size: int, inner_dot_radius: int) -> pg.Surface:
-    """True private helper."""
+    """Generates and caches decorative inner overlay rings for hubs."""
     ring = pg.Surface((size, size), pg.SRCALPHA)
     half = size // 2
     pg.draw.circle(ring, HUB_RING_COLOR, (half, half), max(1, half - 1), width=1)
@@ -73,14 +74,10 @@ def get_hub_name(hub_or_str: Node | str) -> str:
 
 
 def resolve_hub_color(hub: Node) -> pg.Color:
-    try:
-        color_str = hub.metadata.color if getattr(hub, "metadata", None) and hub.metadata.color else "red"
-        return pg.Color(color_str)
-    except Exception:
-        return pg.Color("red")
+    print(pg.Color(hub.metadata.color or "red"))
+    return pg.Color(hub.metadata.color or "red")
 
 
-# --- Classes ---
 class HubSprite(pg.sprite.Sprite):
     def __init__(self, *groups: pg.sprite.AbstractGroup[Any]) -> None:
         super().__init__(*groups)
@@ -89,8 +86,14 @@ class HubSprite(pg.sprite.Sprite):
         self.rect: pg.Rect = pg.Rect(0, 0, 0, 0)
         self.aura: pg.Surface | None = None
         
-        self._last_size: int = -1
-        self._last_drone_count: int = -1
+        # State tracking fields for layout optimizations
+        self.last_size: int = -1
+        self.last_drone_count: int = -1
+        self.last_zoom: float = -1.0
+        
+        # Cached label entities attached to this sprite instance
+        self.name_label: LabelSprite | None = None
+        self.count_label: LabelSprite | None = None
 
     def setup(self, hub: Node, center: tuple[int, int], size: int = 100, drone_count: int = 0) -> None:
         self.hub = hub
@@ -98,13 +101,15 @@ class HubSprite(pg.sprite.Sprite):
         color = resolve_hub_color(hub)
         color_rgb = (color.r, color.g, color.b)
 
+        # Dynamic aura assignment
         if drone_count > 0:
             aura_r = max(1, diameter // 2 + (diameter // 5))
             self.aura = _get_aura_surface(aura_r, color_rgb, HUB_GLOW_ALPHA)
         else:
             self.aura = None
 
-        if self._last_size != diameter or self._last_drone_count != drone_count:
+        # Re-render sprite circles only when geometric sizes shift
+        if self.last_size != diameter or self.last_drone_count != drone_count:
             self.image = pg.Surface((diameter, diameter), pg.SRCALPHA)
             pg.draw.circle(self.image, color, (diameter // 2, diameter // 2), diameter // 2)
             
@@ -112,13 +117,13 @@ class HubSprite(pg.sprite.Sprite):
             ring_surf = _get_ring_surface(diameter, inner_dot_r)
             self.image.blit(ring_surf, (0, 0))
             
-            self._last_size = diameter
-            self._last_drone_count = drone_count
+            self.last_size = diameter
+            self.last_drone_count = drone_count
 
         self.rect = self.image.get_rect(center=center)
 
 
-# --- Core Drawing Functions ---
+# --- Core Logic & Map Drawing Loops ---
 def compute_base_hub_pixels(map_: Map, screen: pg.Surface, padding: int = 20, spread: float = WORLD_SPREAD) -> dict[str, tuple[float, float]]:
     if not map_.hubs:
         return {}
@@ -197,37 +202,50 @@ def draw_auras(screen: pg.Surface, hub_by_name: dict[str, HubSprite]) -> None:
         screen.blit(sprite.aura, (ax, ay))
 
 
-def draw_label(screen: pg.Surface, text: str, font: pg.font.Font, center: tuple[int, int], text_color: tuple[int, int, int] = LABEL_TEXT_COLOR, border_color: tuple[int, int, int, int] = LABEL_BORDER_COLOR, bg_color: tuple[int, int, int, int] = LABEL_BG_COLOR) -> None:
-    text_surface = font.render(text, True, text_color)
-    text_rect = text_surface.get_rect(center=center)
-    bg_rect = text_rect.inflate(LABEL_PADDING_X * 2, LABEL_PADDING_Y * 2)
-
-    background = pg.Surface(bg_rect.size, pg.SRCALPHA)
-    pg.draw.rect(background, bg_color, background.get_rect(), border_radius=6)
-    pg.draw.rect(background, border_color, background.get_rect(), width=1, border_radius=6)
-    screen.blit(background, bg_rect)
-    screen.blit(text_surface, text_rect)
-
-
 def draw_hub_labels(screen: pg.Surface, hub_by_name: dict[str, HubSprite], zoom: float, drone_count_per_hub: dict[str, int] | None = None) -> None:
     if drone_count_per_hub is None:
         drone_count_per_hub = {}
-    
-    name_font = get_font(scale_value(BASE_NAME_FONT_SIZE, zoom))
-    count_font = get_font(scale_value(BASE_COUNT_FONT_SIZE, zoom))
 
     for sprite in hub_by_name.values():
         hub = sprite.hub
-        c = resolve_hub_color(hub)
+        drone_count = drone_count_per_hub.get(hub.name, 0)
         
+        # Calculate centers every frame to account for camera movement/panning
         offset = max(18, sprite.rect.height // 2 + LABEL_GAP * 3)
         name_center = (sprite.rect.centerx, sprite.rect.centery - offset)
         count_center = (sprite.rect.centerx, sprite.rect.centery + offset)
+        
+        # Re-instantiate graphics only when zoom properties or counts fluctuate
+        if (sprite.last_zoom != zoom or 
+            sprite.last_drone_count != drone_count or 
+            sprite.name_label is None or 
+            sprite.count_label is None):
+            
+            c = resolve_hub_color(hub)
+            name_font = get_font(scale_value(BASE_NAME_FONT_SIZE, zoom))
+            count_font = get_font(scale_value(BASE_COUNT_FONT_SIZE, zoom))
+            
+            sprite.name_label = LabelSprite()
+            sprite.name_label.setup(hub.name, name_font, center=name_center, border_color=LABEL_BORDER_COLOR)
+            
+            sprite.count_label = LabelSprite()
+            sprite.count_label.setup(
+                text=str(drone_count), 
+                font=count_font, 
+                center=count_center, 
+                text_color=(c.r, c.g, c.b), 
+                border_color=(c.r, c.g, c.b, 160)
+            )
+            sprite.last_zoom = zoom
+            sprite.last_drone_count = drone_count
+        else:
+            # Panning update: Keep the same pre-rendered image, just shift its screen position
+            sprite.name_label.rect.center = name_center
+            sprite.count_label.rect.center = count_center
 
-        draw_label(screen, hub.name, name_font, name_center, border_color=LABEL_BORDER_COLOR)
-
-        drone_count = drone_count_per_hub.get(hub.name, 0)
-        draw_label(screen, str(drone_count), count_font, count_center, text_color=(c.r, c.g, c.b), border_color=(c.r, c.g, c.b, 160))
+        # Render labels onto the screen canvas
+        screen.blit(sprite.name_label.image, sprite.name_label.rect)
+        screen.blit(sprite.count_label.image, sprite.count_label.rect)
 
 
 def draw_drone_on_connections(screen: pg.Surface, map_: Map, screen_positions: dict[str, tuple[int, int]], drones_on_connections: dict[tuple[str, str], list[int]] | None = None, zoom: float = 1.0) -> None:
@@ -243,8 +261,10 @@ def draw_drone_on_connections(screen: pg.Surface, map_: Map, screen_positions: d
         if s1 is None or s2 is None:
             continue
         
-        conn_key = tuple(sorted([get_hub_name(conn.node1), get_hub_name(conn.node2)]))
-        drone_ids = drones_on_connections.get(conn_key, [])  # type: ignore
+        # Pylance Fix: Array unpacked to discrete variables first to prevent tuple-size ambiguity
+        n1, n2 = sorted([get_hub_name(conn.node1), get_hub_name(conn.node2)])
+        conn_key: tuple[str, str] = (n1, n2)
+        drone_ids = drones_on_connections.get(conn_key, [])
         
         if drone_ids:
             mid_x, mid_y = (s1[0] + s2[0]) // 2, (s1[1] + s2[1]) // 2

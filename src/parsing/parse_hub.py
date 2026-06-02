@@ -34,7 +34,6 @@ def parse_hub(line: str, line_nb: int, start: bool, end: bool) -> Node:
                     valid = ["normal", "restricted", "priority", "blocked"]
                     raise ParsingError(line_nb, f"Zone '{meta_data['zone']}' is invalid. Valid zones: {valid}")
             elif key == "color":
-                # Accept any string for color; it's stored as-is and defaults to 'red'
                 color = meta_data["color"]
             else:
                 try:
