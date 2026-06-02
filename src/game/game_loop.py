@@ -36,6 +36,9 @@ def game_loop(initial_map: Map) -> None:
     sim = Simulator(map_)
     sim_running = True
     sim_finished_printed = False
+    
+    # Latch flag to hold the simulation clock for exactly one frame
+    first_frame = True
 
     base_positions = compute_base_hub_pixels(map_, screen)
     camera = Camera(screen, base_positions)
@@ -47,7 +50,7 @@ def game_loop(initial_map: Map) -> None:
     last_mouse = pg.Vector2(0, 0)
 
     def _rebuild_runtime_state() -> None:
-        nonlocal map_, sim, sim_running, sim_finished_printed, sim_acc
+        nonlocal map_, sim, sim_running, sim_finished_printed, sim_acc, first_frame
         nonlocal base_positions, hubs, hub_by_name, hub_sprites
 
         map_ = deepcopy(initial_map)
@@ -55,13 +58,15 @@ def game_loop(initial_map: Map) -> None:
         sim_running = True
         sim_finished_printed = False
         sim_acc = 0.0
+        
+        # Reset latch flag on simulation restarts
+        first_frame = True
 
         base_positions = compute_base_hub_pixels(map_, screen)
         hubs, hub_by_name = build_hub_sprites(map_, base_positions, camera)
         hub_sprites = pg.sprite.RenderPlain(*hubs)
-        clock.tick(FPS)  # Clear lag after restarts too
+        clock.tick(FPS)
 
-    # FIX: Flush window generation lag so frame 1 starts cleanly at 0.0s elapsed
     clock.tick(FPS)
 
     while True:
@@ -98,6 +103,11 @@ def game_loop(initial_map: Map) -> None:
                 last_mouse = camera.drag_pan(last_mouse, event.pos)
 
         dt = clock.tick(FPS) / 500.0
+        
+        # FIX: Force delta-time to zero on frame 1 so Turn 0 successfully draws
+        if first_frame:
+            dt = 0.0
+            first_frame = False
         
         if not sim_paused:
             sim_acc += dt
@@ -148,7 +158,7 @@ def game_loop(initial_map: Map) -> None:
 
         hub_sprites.update()
 
-        # Rendering
+        # Rendering pipeline handles clean presentation of Turn 0 data
         screen.fill(BG_COLOR)
         draw_grid(screen)
         draw_connections(screen, map_, screen_positions, camera.zoom)
