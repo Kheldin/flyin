@@ -113,8 +113,10 @@ class PathFinder:
 
         start_g = 0.0
         start_h = self._heuristic(self.map.start_hub)
+        
+        # FIX 1 : On commence explicitement au temps 0 (Tour 0 initial)
         open_set: list[tuple[float, int, float, int, Node, Path]] = [
-            (start_g + start_h, next(counter), start_g, -1, self.map.start_hub, [])
+            (start_g + start_h, next(counter), start_g, 0, self.map.start_hub, [])
         ]
         visited: set[tuple[Node, int]] = set()
 
@@ -160,15 +162,26 @@ class PathFinder:
                     elif dest_node.metadata.zone == Zone.PRIORITY:
                         priority_bonus = 0.5
 
-                arrival_time = next_time + restricted
-                if self.state.can_use_connection(conn, next_time) and self.state.can_enter_node(dest_node, arrival_time):
-                    new_path = path + [(conn, next_time)] + [(dest_node, arrival_time)]
+                # FIX 2 : Le trajet prend 1 tour de base sur la connexion + les restrictions éventuelles
+                arrival_time = next_time + 1 + restricted
+
+                # On vérifie que la connexion est libre sur l'ensemble de la traversée
+                can_use_link = True
+                for t in range(next_time, arrival_time):
+                    if not self.state.can_use_connection(conn, t):
+                        can_use_link = False
+                        break
+
+                if can_use_link and self.state.can_enter_node(dest_node, arrival_time):
+                    # On génère un état pour chaque tour passé sur la connexion (évite d'écraser les clés)
+                    connection_steps = [(conn, t) for t in range(next_time, arrival_time)]
+                    new_path = path + connection_steps + [(dest_node, arrival_time)]
+                    
                     new_g = g_score + cost
                     new_f = new_g + self._heuristic(dest_node) - priority_bonus
                     heapq.heappush(open_set, (new_f, next(counter), new_g, arrival_time, dest_node, new_path))
 
         return []
-
 
 class Simulator:
     def __init__(self, map_data: Map) -> None:

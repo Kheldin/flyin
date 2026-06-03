@@ -30,15 +30,13 @@ def game_loop(initial_map: Map) -> None:
 
     sim_tick = 0.2
     sim_acc = 0.0
-    sim_paused: bool = False
+    sim_paused: bool = True
 
     map_ = deepcopy(initial_map)
     sim = Simulator(map_)
     sim_running = True
     sim_finished_printed = False
     
-    # Latch flag to hold the simulation clock for exactly one frame
-    first_frame = True
 
     base_positions = compute_base_hub_pixels(map_, screen)
     camera = Camera(screen, base_positions)
@@ -50,7 +48,7 @@ def game_loop(initial_map: Map) -> None:
     last_mouse = pg.Vector2(0, 0)
 
     def _rebuild_runtime_state() -> None:
-        nonlocal map_, sim, sim_running, sim_finished_printed, sim_acc, first_frame
+        nonlocal map_, sim, sim_running, sim_finished_printed, sim_acc
         nonlocal base_positions, hubs, hub_by_name, hub_sprites
 
         map_ = deepcopy(initial_map)
@@ -60,7 +58,6 @@ def game_loop(initial_map: Map) -> None:
         sim_acc = 0.0
         
         # Reset latch flag on simulation restarts
-        first_frame = True
 
         base_positions = compute_base_hub_pixels(map_, screen)
         hubs, hub_by_name = build_hub_sprites(map_, base_positions, camera)
@@ -104,11 +101,6 @@ def game_loop(initial_map: Map) -> None:
 
         dt = clock.tick(FPS) / 500.0
         
-        # FIX: Force delta-time to zero on frame 1 so Turn 0 successfully draws
-        if first_frame:
-            dt = 0.0
-            first_frame = False
-        
         if not sim_paused:
             sim_acc += dt
             if sim_acc >= sim_tick:
@@ -137,6 +129,7 @@ def game_loop(initial_map: Map) -> None:
                 for d_node in sim.drone_positions.values()
                 if isinstance(d_node, Node) and d_node.name == hub.name
             )
+
         
         drones_on_connections: dict[tuple[str, str], list[int]] = {}
         for in_transit_entry in sim.in_transit:

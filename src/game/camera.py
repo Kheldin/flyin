@@ -7,7 +7,7 @@ MIN_ZOOM: float = 0.25
 MAX_ZOOM: float = 6.0
 ZOOM_FACTOR: float = 1.15
 PAN_SMOOTH: float = 0.1
-DEFAULT_ZOOM: float = 1
+DEFAULT_ZOOM: float = 1.5
 
 
 class Camera:

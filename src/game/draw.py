@@ -99,9 +99,10 @@ class HubSprite(pg.sprite.Sprite):
         self.aura: pg.Surface | None = None
         self.is_rainbow: bool = False
         
-        # State tracking fields for layout optimizations
+        # --- FIXED: All state tracking fields properly isolated and initialized ---
         self.last_size: int = -1
         self.last_drone_count: int = -1
+        self.last_label_drone_count: int = -1
         self.last_zoom: float = -1.0
         
         # Cached label entities attached to this sprite instance
@@ -122,7 +123,7 @@ class HubSprite(pg.sprite.Sprite):
         else:
             self.aura = None
 
-        # Re-render sprite circles only when geometric sizes shift (Rainbow handles updates in update())
+        # Re-render sprite circles only when geometric sizes shift
         if self.last_size != diameter or self.last_drone_count != drone_count or self.is_rainbow:
             self.image = pg.Surface((diameter, diameter), pg.SRCALPHA)
             pg.draw.circle(self.image, color, (diameter // 2, diameter // 2), diameter // 2)
@@ -154,7 +155,6 @@ class HubSprite(pg.sprite.Sprite):
             if self.last_drone_count > 0:
                 aura_r = max(1, diameter // 2 + (diameter // 5))
                 self.aura = _get_aura_surface(aura_r, (color.r, color.g, color.b), HUB_GLOW_ALPHA)
-
 
 # --- Core Logic & Map Drawing Loops ---
 def compute_base_hub_pixels(map_: Map, screen: pg.Surface, padding: int = 20, spread: float = WORLD_SPREAD) -> dict[str, tuple[float, float]]:
