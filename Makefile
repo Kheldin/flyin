@@ -44,12 +44,12 @@ clean:
 
 lint:
 	@echo "Running flake8..."
-	flake8 src
+	flake8 .
 	@echo "Running mypy..."
-	mypy src --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs
+	mypy . --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs
 
 lint-strict:
 	@echo "Running flake8..."
-	flake8 src
+	flake8 .
 	@echo "Running mypy (strict mode)..."
-	mypy src --strict
+	mypy . --strict
