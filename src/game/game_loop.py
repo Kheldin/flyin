@@ -112,7 +112,7 @@ def game_loop(initial_map: Map) -> None:
                     
                     if is_finished and not sim_finished_printed:
                         print(
-                            f"Finished in {sim.turn} turns "
+                            f"Finished in {sim.turn - 1} turns "
                             f"(Delivered: {sim.delivered}/{sim.total}, Failed: {sim.failed})"
                         )
                         sim_finished_printed = True
