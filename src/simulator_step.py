@@ -4,7 +4,6 @@ import heapq
 import itertools
 from typing import Dict, List, Tuple, TypeAlias, Set
 
-# Adjust import based on your project structure (fly_in.map_types vs models.map)
 from models.map import Node, Connection, Zone, Map
 
 PathStep: TypeAlias = tuple[Node | Connection, int]

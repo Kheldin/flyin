@@ -1,5 +1,4 @@
 """Rendering helpers and sprite classes moved out of game_loop."""
-from __future__ import annotations
 import functools
 from typing import Any
 

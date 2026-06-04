@@ -11,4 +11,6 @@ dependencies = [
     "pygame==2.6.1",
 ]
 
-[tool.uv.sources]
+[tool.mypy]
+mypy_path = "src"
+explicit_package_bases = true
