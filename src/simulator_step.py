@@ -130,7 +130,7 @@ class PathFinder:
                 continue
             visited.add(state_key)
 
-            # --- OPTION 1 : Rester sur place (Attendre) ---
+            # --- OPTION 1 : Wait ---
             next_time = current_time + 1
             if self.state.can_enter_node(current_node, next_time):
                 new_path = path + [(current_node, next_time)]
@@ -138,7 +138,7 @@ class PathFinder:
                 new_f = new_g + self._heuristic(current_node)
                 heapq.heappush(open_set, (new_f, next(counter), new_g, next_time, current_node, new_path))
 
-            # --- OPTION 2 : Se déplacer vers un Hub voisin ---
+            # --- OPTION 2 : Move to a neighbor hub ---
             for conn in self.map.connections:
                 dest_node = None
                 if conn.node1 == current_node:
@@ -151,7 +151,7 @@ class PathFinder:
                 if dest_node.metadata.zone == Zone.BLOCKED:
                     continue
 
-                # Détermination des coûts et contraintes selon la règle VII.3
+                # Cost
                 cost: float = 1.0
                 is_restricted: bool = False
                 priority_bonus: float = 0.0
@@ -160,21 +160,21 @@ class PathFinder:
                     cost = 2.0
                     is_restricted = True
                 elif dest_node.metadata.zone == Zone.PRIORITY:
-                    priority_bonus = 0.5  # Donne une préférence à cette route dans l'A*
+                    priority_bonus = 0.5  # Add a bonus if it's a priority Zone 
 
                 if is_restricted:
-                    # Règle : 2 tours pour les zones restreintes (Temps T+1 sur le lien, Arrivée à T+2)
+                    # Wait 2 turn if the zone is restricted
                     arrival_time = current_time + 2
                     can_use_link = self.state.can_use_connection(conn, current_time + 1) and \
                                    self.state.can_use_connection(conn, current_time + 2)
                     connection_steps = [(conn, current_time + 1), (conn, current_time + 2)]
                 else:
-                    # Règle : 1 tour pour le normal / priority (Arrivée à T+1)
+                    # add one to the cost 
                     arrival_time = current_time + 1
                     can_use_link = self.state.can_use_connection(conn, current_time + 1)
                     connection_steps = [(conn, current_time + 1)]
 
-                # Vérification des capacités au tour exact de l'entrée/survol
+                # Check if the connection and the hub are available
                 if can_use_link and self.state.can_enter_node(dest_node, arrival_time):
                     new_path = path + connection_steps + [(dest_node, arrival_time)]
                     new_g = g_score + cost
