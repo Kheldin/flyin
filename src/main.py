@@ -5,10 +5,9 @@ from parsing.parsing import parse_file
 from game.game_loop import game_loop
 
 
-def main():
+def main() -> None:
     try:
         map = parse_file()
-        print(map.hubs)
         pygame.init()
         game_loop(map)
     except Exception as e:

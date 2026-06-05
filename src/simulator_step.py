@@ -38,21 +38,27 @@ class SimulationState:
         return nb_drones_in < capacity
 
     def can_use_connection(self, connection: Connection, time: int) -> bool:
-        capacity: int = connection.metadata.max_link_capacity if connection.metadata.max_link_capacity else 1
-        nb_drones_on: int = len(self.conn_reservations.get(time, {}).get(connection, []))
+        capacity: int = connection.metadata.max_link_capacity if \
+            connection.metadata.max_link_capacity else 1
+        nb_drones_on: int = len(
+            self.conn_reservations.get(time, {}).get(connection, [])
+            )
         return nb_drones_on < capacity
 
     def reserve_node(self, node: Node, time: int, drone_id: int) -> None:
         self.node_reservations[time][node].append(drone_id)
 
-    def reserve_connection(self, connection: Connection, time: int, drone_id: int) -> None:
+    def reserve_connection(self, connection: Connection,
+                           time: int, drone_id: int) -> None:
         self.conn_reservations[time][connection].append(drone_id)
 
 
 class PathFinder:
     def __init__(self, map_data: Map) -> None:
         self.map = map_data
-        self.state = SimulationState(map_data.start_hub, map_data.end_hub, map_data.nb_drones)
+        self.state = SimulationState(map_data.start_hub,
+                                     map_data.end_hub,
+                                     map_data.nb_drones)
         self.drones_paths: dict[int, Path] = {}
         self.true_dist = self._compute_true_distances()
         if self.true_dist[self.map.start_hub] == -1:
@@ -101,7 +107,7 @@ class PathFinder:
         for location, time in path:
             if isinstance(location, Node):
                 self.state.reserve_node(location, time, drone_id)
-            elif isinstance(location, Connection): # type: ignore
+            elif isinstance(location, Connection):
                 self.state.reserve_connection(location, time, drone_id)
 
     def _heuristic(self, node: Node) -> int:
@@ -113,7 +119,6 @@ class PathFinder:
         start_g = 0.0
         start_h = self._heuristic(self.map.start_hub)
         
-        # On commence la recherche à l'état 0 (origine)
         open_set: list[tuple[float, int, float, int, Node, Path]] = [
             (start_g + start_h, next(counter), start_g, 0, self.map.start_hub, [])
         ]
@@ -184,6 +189,7 @@ class PathFinder:
         return []
 
 class Simulator:
+    """Simulation orchestrator"""
     def __init__(self, map_data: Map) -> None:
         self.map = map_data
         self.total = self.map.nb_drones
@@ -255,7 +261,7 @@ class Simulator:
                         self.is_delivered.add(drone_id)
 
                 # Handling Connection Transit Start
-                elif isinstance(current_step_loc, Connection): # type: ignore
+                elif isinstance(current_step_loc, Connection):
                     prev_loc = self.current_locations[drone_id]
                     if isinstance(prev_loc, Node):
                         frm = prev_loc.name

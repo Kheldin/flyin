@@ -1,19 +1,4 @@
-.PHONY: install run debug clean lint lint-strict help
-
-help:
-	@echo "Available targets:"
-	@echo "  make install      - Install project dependencies using uv"
-	@echo "  make run          - Execute the main script with default paths"
-	@echo "  make run MAP=<path> FUNCTIONS=<path> INPUT=<path> OUTPUT=<path>"
-	@echo "                    - Run with custom file paths (MAP is required)"
-	@echo "  make debug        - Run the main script in debug mode (pdb)"
-	@echo "  make clean        - Remove temporary files and caches"
-	@echo "  make lint         - Run flake8 and mypy with standard flags"
-	@echo "  make lint-strict  - Run flake8 and mypy with strict flags"
-	@echo ""
-	@echo "Examples:"
-	@echo "  make run MAP=maps/level1.txt"
-	@echo "  make run MAP=maps/level1.txt FUNCTIONS=custom/fns.json INPUT=custom/tests.json"
+.PHONY: install run debug clean lint lint-strict
 
 install:
 	@echo "Installing dependencies with uv..."
@@ -43,13 +28,13 @@ clean:
 	@echo "Clean complete."
 
 lint:
-	@echo "Running flake8..."
-	flake8 .
 	@echo "Running mypy..."
-	mypy . --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs
+	mypy src --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs
+	@echo "Running flake8..."
+	flake8 src
 
 lint-strict:
-	@echo "Running flake8..."
-	flake8 .
 	@echo "Running mypy (strict mode)..."
-	mypy . --strict
+	mypy src --strict
+	@echo "Running flake8..."
+	flake8 src

@@ -1,0 +1,359 @@
+nb_drones: 10000000
+start_hub: start -10 0
+end_hub: end 12 0
+hub: n0_m20 0 -20 [color=cyan zone=priority]
+hub: n0_m19 0 -19 [color=black zone=blocked]
+hub: n0_m18 0 -18 [color=red zone=restricted]
+hub: n0_m17 0 -17 [color=red zone=restricted]
+hub: n0_m16 0 -16 [color=black zone=blocked]
+hub: n0_m15 0 -15 [color=red zone=restricted]
+hub: n0_m14 0 -14 [color=white zone=normal]
+hub: n0_m13 0 -13 [color=cyan zone=priority]
+hub: n0_m12 0 -12 [color=cyan zone=priority]
+hub: n0_m11 0 -11 [color=red zone=restricted]
+hub: n0_m10 0 -10 [color=white zone=normal]
+hub: n0_m9 0 -9 [color=red zone=restricted]
+hub: n0_m8 0 -8 [color=white zone=normal]
+hub: n0_m7 0 -7 [color=cyan zone=priority]
+hub: n0_m6 0 -6 [color=red zone=restricted]
+hub: n0_m5 0 -5 [color=cyan zone=priority]
+hub: n0_m4 0 -4 [color=white zone=normal]
+hub: n0_m3 0 -3 [color=red zone=restricted]
+hub: n0_m2 0 -2 [color=black zone=blocked]
+hub: n0_m1 0 -1 [color=white zone=normal]
+hub: n0_0 0 0 [color=cyan zone=priority]
+hub: n0_1 0 1 [color=red zone=restricted]
+hub: n0_2 0 2 [color=white zone=normal]
+hub: n0_3 0 3 [color=black zone=blocked]
+hub: n0_4 0 4 [color=black zone=blocked]
+hub: n0_5 0 5 [color=cyan zone=priority]
+hub: n0_6 0 6 [color=cyan zone=priority]
+hub: n0_7 0 7 [color=white zone=normal]
+hub: n0_8 0 8 [color=cyan zone=priority]
+hub: n0_9 0 9 [color=cyan zone=priority]
+hub: n0_10 0 10 [color=cyan zone=priority]
+hub: n0_11 0 11 [color=cyan zone=priority]
+hub: n0_12 0 12 [color=white zone=normal]
+hub: n0_13 0 13 [color=white zone=normal]
+hub: n0_14 0 14 [color=white zone=normal]
+hub: n0_15 0 15 [color=red zone=restricted]
+hub: n0_16 0 16 [color=red zone=restricted]
+hub: n0_17 0 17 [color=cyan zone=priority]
+hub: n0_18 0 18 [color=red zone=restricted]
+hub: n0_19 0 19 [color=red zone=restricted]
+hub: n1_m20 1 -20 [color=red zone=restricted]
+hub: n1_m19 1 -19 [color=white zone=normal]
+hub: n1_m18 1 -18 [color=white zone=normal]
+hub: n1_m17 1 -17 [color=white zone=normal]
+hub: n1_m16 1 -16 [color=white zone=normal]
+hub: n1_m15 1 -15 [color=cyan zone=priority]
+hub: n1_m14 1 -14 [color=white zone=normal]
+hub: n1_m13 1 -13 [color=cyan zone=priority]
+hub: n1_m12 1 -12 [color=cyan zone=priority]
+hub: n1_m11 1 -11 [color=white zone=normal]
+hub: n1_m10 1 -10 [color=cyan zone=priority]
+hub: n1_m9 1 -9 [color=cyan zone=priority]
+hub: n1_m8 1 -8 [color=cyan zone=priority]
+hub: n1_m7 1 -7 [color=red zone=restricted]
+hub: n1_m6 1 -6 [color=red zone=restricted]
+hub: n1_m5 1 -5 [color=black zone=blocked]
+hub: n1_m4 1 -4 [color=cyan zone=priority]
+hub: n1_m3 1 -3 [color=cyan zone=priority]
+hub: n1_m2 1 -2 [color=cyan zone=priority]
+hub: n1_m1 1 -1 [color=red zone=restricted]
+hub: n1_0 1 0 [color=cyan zone=priority]
+hub: n1_1 1 1 [color=red zone=restricted]
+hub: n1_2 1 2 [color=white zone=normal]
+hub: n1_3 1 3 [color=red zone=restricted]
+hub: n1_4 1 4 [color=red zone=restricted]
+hub: n1_5 1 5 [color=cyan zone=priority]
+hub: n1_6 1 6 [color=white zone=normal]
+hub: n1_7 1 7 [color=cyan zone=priority]
+hub: n1_8 1 8 [color=red zone=restricted]
+hub: n1_9 1 9 [color=white zone=normal]
+hub: n1_10 1 10 [color=white zone=normal]
+hub: n1_11 1 11 [color=white zone=normal]
+hub: n1_12 1 12 [color=black zone=blocked]
+hub: n1_13 1 13 [color=white zone=normal]
+hub: n1_14 1 14 [color=red zone=restricted]
+hub: n1_15 1 15 [color=white zone=normal]
+hub: n1_16 1 16 [color=cyan zone=priority]
+hub: n1_17 1 17 [color=white zone=normal]
+hub: n1_18 1 18 [color=cyan zone=priority]
+hub: n1_19 1 19 [color=white zone=normal]
+connection: start-n0_m20
+connection: start-n0_m19
+connection: start-n0_m18
+connection: start-n0_m17
+connection: start-n0_m16
+connection: start-n0_m15
+connection: start-n0_m14
+connection: start-n0_m13
+connection: start-n0_m12
+connection: start-n0_m11
+connection: start-n0_m10
+connection: start-n0_m9
+connection: start-n0_m8
+connection: start-n0_m7
+connection: start-n0_m6
+connection: start-n0_m5
+connection: start-n0_m4
+connection: start-n0_m3
+connection: start-n0_m2
+connection: start-n0_m1
+connection: start-n0_0
+connection: start-n0_1
+connection: start-n0_2
+connection: start-n0_3
+connection: start-n0_4
+connection: start-n0_5
+connection: start-n0_6
+connection: start-n0_7
+connection: start-n0_8
+connection: start-n0_9
+connection: start-n0_10
+connection: start-n0_11
+connection: start-n0_12
+connection: start-n0_13
+connection: start-n0_14
+connection: start-n0_15
+connection: start-n0_16
+connection: start-n0_17
+connection: start-n0_18
+connection: start-n0_19
+connection: n0_m20-n1_m19
+connection: n0_m20-n0_m19
+connection: n0_m19-n1_m18
+connection: n0_m19-n1_m20
+connection: n0_m19-n0_m18
+connection: n0_m18-n1_m17
+connection: n0_m18-n1_m19
+connection: n0_m18-n0_m17
+connection: n0_m17-n1_m16
+connection: n0_m17-n1_m18
+connection: n0_m17-n0_m16
+connection: n0_m16-n1_m15
+connection: n0_m16-n1_m17
+connection: n0_m16-n0_m15
+connection: n0_m15-n1_m14
+connection: n0_m15-n1_m16
+connection: n0_m15-n0_m14
+connection: n0_m14-n1_m13
+connection: n0_m14-n1_m15
+connection: n0_m14-n0_m13
+connection: n0_m13-n1_m12
+connection: n0_m13-n1_m14
+connection: n0_m13-n0_m12
+connection: n0_m12-n1_m11
+connection: n0_m12-n1_m13
+connection: n0_m12-n0_m11
+connection: n0_m11-n1_m10
+connection: n0_m11-n1_m12
+connection: n0_m11-n0_m10
+connection: n0_m10-n1_m9
+connection: n0_m10-n1_m11
+connection: n0_m10-n0_m9
+connection: n0_m9-n1_m8
+connection: n0_m9-n1_m10
+connection: n0_m9-n0_m8
+connection: n0_m8-n1_m7
+connection: n0_m8-n1_m9
+connection: n0_m8-n0_m7
+connection: n0_m7-n1_m6
+connection: n0_m7-n1_m8
+connection: n0_m7-n0_m6
+connection: n0_m6-n1_m5
+connection: n0_m6-n1_m7
+connection: n0_m6-n0_m5
+connection: n0_m5-n1_m4
+connection: n0_m5-n1_m6
+connection: n0_m5-n0_m4
+connection: n0_m4-n1_m3
+connection: n0_m4-n1_m5
+connection: n0_m4-n0_m3
+connection: n0_m3-n1_m2
+connection: n0_m3-n1_m4
+connection: n0_m3-n0_m2
+connection: n0_m2-n1_m1
+connection: n0_m2-n1_m3
+connection: n0_m2-n0_m1
+connection: n0_m1-n1_0
+connection: n0_m1-n1_m2
+connection: n0_m1-n0_0
+connection: n0_0-n1_1
+connection: n0_0-n1_m1
+connection: n0_0-n0_1
+connection: n0_1-n1_2
+connection: n0_1-n1_0
+connection: n0_1-n0_2
+connection: n0_2-n1_3
+connection: n0_2-n1_1
+connection: n0_2-n0_3
+connection: n0_3-n1_4
+connection: n0_3-n1_2
+connection: n0_3-n0_4
+connection: n0_4-n1_5
+connection: n0_4-n1_3
+connection: n0_4-n0_5
+connection: n0_5-n1_6
+connection: n0_5-n1_4
+connection: n0_5-n0_6
+connection: n0_6-n1_7
+connection: n0_6-n1_5
+connection: n0_6-n0_7
+connection: n0_7-n1_8
+connection: n0_7-n1_6
+connection: n0_7-n0_8
+connection: n0_8-n1_9
+connection: n0_8-n1_7
+connection: n0_8-n0_9
+connection: n0_9-n1_10
+connection: n0_9-n1_8
+connection: n0_9-n0_10
+connection: n0_10-n1_11
+connection: n0_10-n1_9
+connection: n0_10-n0_11
+connection: n0_11-n1_12
+connection: n0_11-n1_10
+connection: n0_11-n0_12
+connection: n0_12-n1_13
+connection: n0_12-n1_11
+connection: n0_12-n0_13
+connection: n0_13-n1_14
+connection: n0_13-n1_12
+connection: n0_13-n0_14
+connection: n0_14-n1_15
+connection: n0_14-n1_13
+connection: n0_14-n0_15
+connection: n0_15-n1_16
+connection: n0_15-n1_14
+connection: n0_15-n0_16
+connection: n0_16-n1_17
+connection: n0_16-n1_15
+connection: n0_16-n0_17
+connection: n0_17-n1_18
+connection: n0_17-n1_16
+connection: n0_17-n0_18
+connection: n0_18-n1_19
+connection: n0_18-n1_17
+connection: n0_18-n0_19
+connection: n0_19-n1_18
+connection: n0_m20-n1_m20
+connection: n0_m19-n1_m19
+connection: n0_m18-n1_m18
+connection: n0_m17-n1_m17
+connection: n0_m16-n1_m16
+connection: n0_m15-n1_m15
+connection: n0_m14-n1_m14
+connection: n0_m13-n1_m13
+connection: n0_m12-n1_m12
+connection: n0_m11-n1_m11
+connection: n0_m10-n1_m10
+connection: n0_m9-n1_m9
+connection: n0_m8-n1_m8
+connection: n0_m7-n1_m7
+connection: n0_m6-n1_m6
+connection: n0_m5-n1_m5
+connection: n0_m4-n1_m4
+connection: n0_m3-n1_m3
+connection: n0_m2-n1_m2
+connection: n0_m1-n1_m1
+connection: n0_0-n1_0
+connection: n0_1-n1_1
+connection: n0_2-n1_2
+connection: n0_3-n1_3
+connection: n0_4-n1_4
+connection: n0_5-n1_5
+connection: n0_6-n1_6
+connection: n0_7-n1_7
+connection: n0_8-n1_8
+connection: n0_9-n1_9
+connection: n0_10-n1_10
+connection: n0_11-n1_11
+connection: n0_12-n1_12
+connection: n0_13-n1_13
+connection: n0_14-n1_14
+connection: n0_15-n1_15
+connection: n0_16-n1_16
+connection: n0_17-n1_17
+connection: n0_18-n1_18
+connection: n0_19-n1_19
+connection: n1_m20-n1_m19
+connection: n1_m19-n1_m18
+connection: n1_m18-n1_m17
+connection: n1_m17-n1_m16
+connection: n1_m16-n1_m15
+connection: n1_m15-n1_m14
+connection: n1_m14-n1_m13
+connection: n1_m13-n1_m12
+connection: n1_m12-n1_m11
+connection: n1_m11-n1_m10
+connection: n1_m10-n1_m9
+connection: n1_m9-n1_m8
+connection: n1_m8-n1_m7
+connection: n1_m7-n1_m6
+connection: n1_m6-n1_m5
+connection: n1_m5-n1_m4
+connection: n1_m4-n1_m3
+connection: n1_m3-n1_m2
+connection: n1_m2-n1_m1
+connection: n1_m1-n1_0
+connection: n1_0-n1_1
+connection: n1_1-n1_2
+connection: n1_2-n1_3
+connection: n1_3-n1_4
+connection: n1_4-n1_5
+connection: n1_5-n1_6
+connection: n1_6-n1_7
+connection: n1_7-n1_8
+connection: n1_8-n1_9
+connection: n1_9-n1_10
+connection: n1_10-n1_11
+connection: n1_11-n1_12
+connection: n1_12-n1_13
+connection: n1_13-n1_14
+connection: n1_14-n1_15
+connection: n1_15-n1_16
+connection: n1_16-n1_17
+connection: n1_17-n1_18
+connection: n1_18-n1_19
+connection: end-n1_m20
+connection: end-n1_m19
+connection: end-n1_m18
+connection: end-n1_m17
+connection: end-n1_m16
+connection: end-n1_m15
+connection: end-n1_m14
+connection: end-n1_m13
+connection: end-n1_m12
+connection: end-n1_m11
+connection: end-n1_m10
+connection: end-n1_m9
+connection: end-n1_m8
+connection: end-n1_m7
+connection: end-n1_m6
+connection: end-n1_m5
+connection: end-n1_m4
+connection: end-n1_m3
+connection: end-n1_m2
+connection: end-n1_m1
+connection: end-n1_0
+connection: end-n1_1
+connection: end-n1_2
+connection: end-n1_3
+connection: end-n1_4
+connection: end-n1_5
+connection: end-n1_6
+connection: end-n1_7
+connection: end-n1_8
+connection: end-n1_9
+connection: end-n1_10
+connection: end-n1_11
+connection: end-n1_12
+connection: end-n1_13
+connection: end-n1_14
+connection: end-n1_15
+connection: end-n1_16
+connection: end-n1_17
+connection: end-n1_18
+connection: end-n1_19
