@@ -1,8 +1,8 @@
 import os
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "hide"
-import pygame
-from parsing.parsing import parse_file
-from game.game_loop import game_loop
+import pygame  # noqa: E402
+from parsing.parsing import parse_file  # noqa: E402
+from game.game_loop import game_loop  # noqa: E402
 
 
 def main() -> None:
@@ -15,8 +15,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    # try:
-    #     main()
-    # except Exception as e:
-    #     print(e)
-    main()
+    try:
+        main()
+    except Exception as e:
+        print(e)
