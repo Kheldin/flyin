@@ -15,13 +15,14 @@ from game.draw import (
     draw_connections,
     draw_auras,
     draw_hub_labels,
-    draw_drone_on_connections
+    draw_drone_on_connections,
 )
 
 SCREEN_WIDTH: int = 1920
 SCREEN_HEIGHT: int = 1080
 FPS: int = 60
 BG_COLOR: tuple[int, int, int] = (13, 17, 23)
+
 
 def game_loop(initial_map: Map) -> None:
     screen = pg.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pg.RESIZABLE)
@@ -36,7 +37,6 @@ def game_loop(initial_map: Map) -> None:
     sim = Simulator(map_)
     sim_running = True
     sim_finished_printed = False
-    
 
     base_positions = compute_base_hub_pixels(map_, screen)
     camera = Camera(screen, base_positions)
@@ -56,7 +56,7 @@ def game_loop(initial_map: Map) -> None:
         sim_running = True
         sim_finished_printed = False
         sim_acc = 0.0
-        
+
         # Reset latch flag on simulation restarts
 
         base_positions = compute_base_hub_pixels(map_, screen)
@@ -77,7 +77,9 @@ def game_loop(initial_map: Map) -> None:
                     sys.exit()
                 elif event.key == K_SPACE:
                     sim_paused = not sim_paused
-                    print("Simulation " + ("paused" if sim_paused else "running"))
+                    print(
+                        "Simulation " + ("paused" if sim_paused else "running")
+                        )
                 elif event.key == K_RIGHT:
                     sim_tick = max(0.05, sim_tick - 0.1)
                     print(f"speed: {sim_tick:.2f}s/turn")
@@ -100,7 +102,7 @@ def game_loop(initial_map: Map) -> None:
                 last_mouse = camera.drag_pan(last_mouse, event.pos)
 
         dt = clock.tick(FPS) / 500.0
-        
+
         if not sim_paused:
             sim_acc += dt
             if sim_acc >= sim_tick:
@@ -109,18 +111,22 @@ def game_loop(initial_map: Map) -> None:
                     is_finished, moves = sim.step()
                     if moves:
                         print(" ".join(moves))
-                    
+
                     if is_finished and not sim_finished_printed:
                         print(
-                            f"Finished in {sim.turn - 1} turns "
-                            f"(Delivered: {sim.delivered}/{sim.total}, Failed: {sim.failed})"
+                            f"Finished in {sim.turn - 1} turns " +
+                            f"(Delivered: {sim.delivered}/{sim.total}" +
+                            f"Failed: {sim.failed})"
                         )
                         sim_finished_printed = True
                         sim_running = False
 
         camera.update()
 
-        screen_positions = {name: camera.world_to_screen(base) for name, base in base_positions.items()}
+        screen_positions = {
+            name: camera.world_to_screen(base)
+            for name, base in base_positions.items()
+        }
 
         drone_count_per_hub: dict[str, int] = {}
         for hub in map_.hubs:
@@ -130,11 +136,10 @@ def game_loop(initial_map: Map) -> None:
                 if isinstance(d_node, Node) and d_node.name == hub.name
             )
 
-        
         drones_on_connections: dict[tuple[str, str], list[int]] = {}
         for in_transit_entry in sim.in_transit:
-            drone_id = in_transit_entry.get('drone_id')
-            conn = in_transit_entry.get('conn')
+            drone_id = in_transit_entry.get("drone_id")
+            conn = in_transit_entry.get("conn")
             if drone_id and conn:
                 key: tuple[str, str] = tuple(sorted(conn))  # type: ignore
                 if key not in drones_on_connections:
@@ -147,7 +152,8 @@ def game_loop(initial_map: Map) -> None:
             pos = screen_positions.get(name)
             if pos is not None:
                 count = drone_count_per_hub.get(name, 0)
-                sprite.setup(sprite.hub, pos, size=size_with_zoom, drone_count=count)
+                sprite.setup(sprite.hub, pos,
+                             size=size_with_zoom, drone_count=count)
 
         hub_sprites.update()
 
@@ -158,6 +164,8 @@ def game_loop(initial_map: Map) -> None:
         draw_auras(screen, hub_by_name)
         hub_sprites.draw(screen)
         draw_hub_labels(screen, hub_by_name, camera.zoom, drone_count_per_hub)
-        draw_drone_on_connections(screen, map_, screen_positions, drones_on_connections, camera.zoom)
+        draw_drone_on_connections(
+            screen, map_, screen_positions, drones_on_connections, camera.zoom
+        )
 
         pg.display.flip()

@@ -10,7 +10,7 @@ class Zone(Enum):
     BLOCKED = auto()
 
     @staticmethod
-    def get_zone(zone_str: str) -> Optional['Zone']:
+    def get_zone(zone_str: str) -> Optional["Zone"]:
         match zone_str:
             case "normal":
                 return Zone.NORMAL
@@ -49,8 +49,9 @@ class Connection:
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, Connection):
             return NotImplemented
-        return frozenset([self.node1,
-                          self.node2]) == frozenset([other.node1, other.node2])
+        return frozenset([self.node1, self.node2]) == frozenset(
+            [other.node1, other.node2]
+        )
 
     def __hash__(self) -> int:
         return hash(frozenset([self.node1, self.node2]))

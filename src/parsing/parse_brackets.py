@@ -11,7 +11,6 @@ def parse_brackets(brackets: list[str], line_nb: int) -> dict[str, str]:
 
     inner = joined[1:-1].strip()
     if not inner:
-        print("here")
         return {}
 
     res: dict[str, str] = {}
