@@ -82,8 +82,8 @@ def parse_file() -> Map:
         node1 = hub_map[hub1_name]
         node2 = hub_map[hub2_name]
         metadata = Metadata(zone=None, color=None, max_link_capacity=max_capacity, max_drones=None)
-        connection = Connection(node1=node1, node2=node2, metadata=metadata)
-        connection_objects.add(connection)
+        connection_obj = Connection(node1=node1, node2=node2, metadata=metadata)
+        connection_objects.add(connection_obj)
 
     map = Map(
         nb_drones=nb_drones,
