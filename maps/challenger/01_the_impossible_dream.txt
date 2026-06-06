@@ -91,6 +91,7 @@ end_hub: impossible_goal 23 0 [color=rainbow max_drones=25]
 
 # Layer 0 connections (bottleneck hell)
 connection: start-gate_hell1 [max_link_capacity=1]
+
 connection: gate_hell1-gate_hell2 [max_link_capacity=1]
 connection: gate_hell2-gate_hell3 [max_link_capacity=1]
 connection: gate_hell3-gate_hell4 [max_link_capacity=1]

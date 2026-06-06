@@ -1,23 +1,30 @@
+"""Main orchestration module handling the primary gameplay loop.
+
+Manages window lifecycles, user inputs, simulation timing step advancements,
+and coordinates the camera updates alongside the rendering pipelines.
+"""
+
 from copy import deepcopy
 import sys
 import pygame as pg
-from pygame.locals import QUIT, KEYDOWN, K_q, K_SPACE, K_RIGHT, K_LEFT, K_r
+from pygame.locals import KEYDOWN, K_LEFT, K_RIGHT, K_SPACE, K_q, K_r, QUIT
 
-from simulator_step import Simulator
-from models.map import Node, Map
 from game.camera import Camera
 from game.draw import (
     BASE_HUB_DIAMETER,
-    scale_value,
-    compute_base_hub_pixels,
     build_hub_sprites,
-    draw_grid,
-    draw_connections,
+    compute_base_hub_pixels,
     draw_auras,
-    draw_hub_labels,
+    draw_connections,
     draw_drone_on_connections,
+    draw_grid,
+    draw_hub_labels,
+    scale_value,
 )
+from models.map import Map, Node
+from simulator_step import Simulator
 
+# --- Window & Environment Constants ---
 SCREEN_WIDTH: int = 1920
 SCREEN_HEIGHT: int = 1080
 FPS: int = 60
@@ -25,29 +32,41 @@ BG_COLOR: tuple[int, int, int] = (13, 17, 23)
 
 
 def game_loop(initial_map: Map) -> None:
+    """Execute the core lifecycle loop of the application.
+
+    Args:
+        initial_map: Immutable template configuration representing the original
+            unaltered world data layout.
+    """
     screen = pg.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pg.RESIZABLE)
     pg.display.set_caption("FlyIn")
     clock = pg.time.Clock()
 
-    sim_tick = 0.2
+    # Simulation step interval and accumulator parameters
+    sim_tick = 0.5
     sim_acc = 0.0
     sim_paused: bool = True
 
+    # Simulation engine instance creation
     map_ = deepcopy(initial_map)
     sim = Simulator(map_)
     sim_running = True
     sim_finished_printed = False
 
+    # Position calculations and viewport system initializations
     base_positions = compute_base_hub_pixels(map_, screen)
     camera = Camera(screen, base_positions)
 
+    # Sprite framework setup for structural hub management
     hubs, hub_by_name = build_hub_sprites(map_, base_positions, camera)
     hub_sprites = pg.sprite.RenderPlain(*hubs)
 
+    # Click-and-drag camera state trackers
     dragging = False
     last_mouse = pg.Vector2(0, 0)
 
     def _rebuild_runtime_state() -> None:
+        """Reset and rebuild all runtime data back to initial parameters."""
         nonlocal map_, sim, sim_running, sim_finished_printed, sim_acc
         nonlocal base_positions, hubs, hub_by_name, hub_sprites
 
@@ -57,8 +76,6 @@ def game_loop(initial_map: Map) -> None:
         sim_finished_printed = False
         sim_acc = 0.0
 
-        # Reset latch flag on simulation restarts
-
         base_positions = compute_base_hub_pixels(map_, screen)
         hubs, hub_by_name = build_hub_sprites(map_, base_positions, camera)
         hub_sprites = pg.sprite.RenderPlain(*hubs)
@@ -66,7 +83,9 @@ def game_loop(initial_map: Map) -> None:
 
     clock.tick(FPS)
 
+    # Primary continuous application runtime execution loop
     while True:
+        # Process structural events gathered by the OS window server
         for event in pg.event.get():
             if event.type == QUIT:
                 pg.quit()
@@ -77,9 +96,8 @@ def game_loop(initial_map: Map) -> None:
                     sys.exit()
                 elif event.key == K_SPACE:
                     sim_paused = not sim_paused
-                    print(
-                        "Simulation " + ("paused" if sim_paused else "running")
-                        )
+                    status = "paused" if sim_paused else "running"
+                    print(f"Simulation {status}")
                 elif event.key == K_RIGHT:
                     sim_tick = max(0.05, sim_tick - 0.1)
                     print(f"speed: {sim_tick:.2f}s/turn")
@@ -101,8 +119,10 @@ def game_loop(initial_map: Map) -> None:
             elif event.type == pg.MOUSEMOTION and dragging:
                 last_mouse = camera.drag_pan(last_mouse, event.pos)
 
+        # Delta time calculation expressed in fractional seconds
         dt = clock.tick(FPS) / 500.0
 
+        # Accumulate time slices and step simulation forward upon intervals
         if not sim_paused:
             sim_acc += dt
             if sim_acc >= sim_tick:
@@ -112,10 +132,11 @@ def game_loop(initial_map: Map) -> None:
                     if moves:
                         print(" ".join(moves))
 
+                    # Print analytics upon reaching the termination conditions
                     if is_finished and not sim_finished_printed:
                         print(
-                            f"Finished in {sim.turn - 1} turns " +
-                            f"(Delivered: {sim.delivered}/{sim.total}" +
+                            f"Finished in {sim.turn - 1} turns "
+                            f"(Delivered: {sim.delivered}/{sim.total} "
                             f"Failed: {sim.failed})"
                         )
                         sim_finished_printed = True
@@ -123,11 +144,13 @@ def game_loop(initial_map: Map) -> None:
 
         camera.update()
 
+        # Update absolute world positions to localized screen space coordinates
         screen_positions = {
             name: camera.world_to_screen(base)
             for name, base in base_positions.items()
         }
 
+        # Tabulate static drone volume data resting inside nodes
         drone_count_per_hub: dict[str, int] = {}
         for hub in map_.hubs:
             drone_count_per_hub[hub.name] = sum(
@@ -136,6 +159,7 @@ def game_loop(initial_map: Map) -> None:
                 if isinstance(d_node, Node) and d_node.name == hub.name
             )
 
+        # Classify and map moving transit items down to line keys
         drones_on_connections: dict[tuple[str, str], list[int]] = {}
         for in_transit_entry in sim.in_transit:
             drone_id = in_transit_entry.get("drone_id")
@@ -147,17 +171,19 @@ def game_loop(initial_map: Map) -> None:
                 if isinstance(drone_id, int):
                     drones_on_connections[key].append(drone_id)
 
+        # Synchronize dimensions and re-center graphic sprite instances
         size_with_zoom = scale_value(BASE_HUB_DIAMETER, camera.zoom)
         for name, sprite in hub_by_name.items():
             pos = screen_positions.get(name)
             if pos is not None:
                 count = drone_count_per_hub.get(name, 0)
-                sprite.setup(sprite.hub, pos,
-                             size=size_with_zoom, drone_count=count)
+                sprite.setup(
+                    sprite.hub, pos, size=size_with_zoom, drone_count=count
+                )
 
         hub_sprites.update()
 
-        # Rendering pipeline handles clean presentation of Turn 0 data
+        # Render graphics components sequentially to ensure layered display
         screen.fill(BG_COLOR)
         draw_grid(screen)
         draw_connections(screen, map_, screen_positions, camera.zoom)

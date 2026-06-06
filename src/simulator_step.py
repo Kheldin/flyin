@@ -1,48 +1,94 @@
+"""Pathfinding engines and simulation orchestration mechanics module.
+
+Provides a space-time A* routing pipeline, multi-agent reservation logs,
+and transactional loop advancement steps for autonomous vehicle networks.
+"""
+
 from __future__ import annotations
-from collections import defaultdict
+
 import heapq
 import itertools
-from typing import Dict, List, Tuple, TypeAlias, Set
+from collections import defaultdict
+from typing import Dict, List, Set, Tuple
 
-from models.map import Node, Connection, Zone, Map
+from models.map import Connection, Map, Node, Zone
 
-PathStep: TypeAlias = tuple[Node | Connection, int]
-Path: TypeAlias = list[PathStep]
+# Type aliases defining coordinates inside the space-time continuum matrix
+PathStep = tuple[Node | Connection, int]
+Path = list[PathStep]
 
 
 class PathError(Exception):
+    """Raise when graph constraints render route optimization impossible."""
+
     def __init__(self, *args: object) -> None:
+        """Initialize the path exception wrapping base attributes.
+
+        Args:
+            *args: Arbitrary arguments forwarded to the exception base.
+        """
         super().__init__(*args)
 
 
 class SimulationState:
+    """Manage space-time occupation logs across elements and turns."""
+
     def __init__(self, start_hub: Node, end_hub: Node, nb_drones: int) -> None:
+        """Initialize reservation ledgers and seed starting distributions.
+
+        Args:
+            start_hub: Map origin target where actors prepare for launch.
+            end_hub: Final destination terminal bounding traversal logic.
+            nb_drones: Volume count specifying cumulative actors in scope.
+        """
         self.start_hub = start_hub
         self.end_hub = end_hub
         self.nb_drones = nb_drones
 
+        # Imbricated ledgers matching structure: ledger[turn][element] -> IDs
         self.node_reservations: dict[int, dict[Node, list[int]]] = defaultdict(
             lambda: defaultdict(list)
         )
-        self.conn_reservations: dict[int, dict[Connection,
-                                               list[int]]] = defaultdict(
-            lambda: defaultdict(list)
+        self.conn_reservations: dict[
+            int, dict[Connection, list[int]]
+        ] = defaultdict(lambda: defaultdict(list))
+
+        # Station all acting drone references inside the origin node at Turn 0
+        self.node_reservations[0][self.start_hub] = list(
+            range(1, nb_drones + 1)
         )
 
-        self.node_reservations[0][self.start_hub] = list(range(
-            1, nb_drones + 1))
-
     def can_enter_node(self, node: Node, time: int) -> bool:
+        """Evaluate clearance metrics of a targeted node at a specific turn.
+
+        Args:
+            node: Objective Node instance evaluated for clearance.
+            time: Target discrete turn snapshot index.
+
+        Returns:
+            True if capacity thresholds accommodate another entry.
+        """
         if node == self.end_hub or node == self.start_hub:
             return True
-        capacity: int = node.metadata.max_drones if \
-            node.metadata.max_drones else 1
+        capacity: int = (
+            node.metadata.max_drones if node.metadata.max_drones else 1
+        )
 
         nb_drones_in: int = len(
-            self.node_reservations.get(time, {}).get(node, []))
+            self.node_reservations.get(time, {}).get(node, [])
+        )
         return nb_drones_in < capacity
 
     def can_use_connection(self, connection: Connection, time: int) -> bool:
+        """Evaluate operational overhead of a path route at a specific turn.
+
+        Args:
+            connection: Target directional Link model evaluated for clearance.
+            time: Target discrete turn snapshot index.
+
+        Returns:
+            True if ongoing transits remain strictly beneath capacity caps.
+        """
         capacity: int = (
             connection.metadata.max_link_capacity
             if connection.metadata.max_link_capacity
@@ -54,16 +100,40 @@ class SimulationState:
         return nb_drones_on < capacity
 
     def reserve_node(self, node: Node, time: int, drone_id: int) -> None:
+        """Log an exclusive station reservation inside node matrices.
+
+        Args:
+            node: Target Node destination receiving the reservation.
+            time: Target discrete turn execution index.
+            drone_id: Numeric identity code of the reserving actor.
+        """
         self.node_reservations[time][node].append(drone_id)
 
     def reserve_connection(
         self, connection: Connection, time: int, drone_id: int
     ) -> None:
+        """Log an exclusive path reservation inside transit matrices.
+
+        Args:
+            connection: Target Connection link path tracking allocations.
+            time: Target discrete turn execution index.
+            drone_id: Numeric identity code of the reserving actor.
+        """
         self.conn_reservations[time][connection].append(drone_id)
 
 
 class PathFinder:
+    """Compute optimal non-conflicting profiles across structured maps."""
+
     def __init__(self, map_data: Map) -> None:
+        """Initialize routing structures and compile lookahead tables.
+
+        Args:
+            map_data: Complete environment layout data structure.
+
+        Raises:
+            PathError: If topological analysis exposes an unsolvable graph.
+        """
         self.map = map_data
         self.state = SimulationState(
             map_data.start_hub, map_data.end_hub, map_data.nb_drones
@@ -74,6 +144,7 @@ class PathFinder:
             raise PathError("map is not solvable")
 
     def route_all_drones(self) -> None:
+        """Loop through actor indexes to compile collision-free strategies."""
         for drone_id in range(1, self.map.nb_drones + 1):
             path = self.find_path()
             if path:
@@ -83,12 +154,18 @@ class PathFinder:
                 print("no path for ", drone_id)
 
     def _compute_true_distances(self) -> dict[Node, int]:
+        """Compute absolute static distance matrices via backward Dijkstra.
+
+        Returns:
+            A lookup table mapping Node instances to minimum step lengths.
+        """
         distances: dict[Node, int] = {node: -1 for node in self.map.hubs}
         distances[self.map.end_hub] = 0
 
         counter = itertools.count()
-        queue: list[tuple[int, int, Node]] = [(0, next(counter),
-                                               self.map.end_hub)]
+        queue: list[tuple[int, int, Node]] = [
+            (0, next(counter), self.map.end_hub)
+        ]
 
         while queue:
             dist, _, current = heapq.heappop(queue)
@@ -108,14 +185,23 @@ class PathFinder:
                         continue
 
                     new_dist = dist + 1
-                    if distances[neighbor] == -1 or \
-                            new_dist < distances[neighbor]:
+                    if (
+                        distances[neighbor] == -1
+                        or new_dist < distances[neighbor]
+                    ):
                         distances[neighbor] = new_dist
-                        heapq.heappush(queue,
-                                       (new_dist, next(counter), neighbor))
+                        heapq.heappush(
+                            queue, (new_dist, next(counter), neighbor)
+                        )
         return distances
 
     def _reserve_path(self, drone_id: int, path: Path) -> None:
+        """Commit an optimized trajectory into global state registers.
+
+        Args:
+            drone_id: Numeric identity code of the routing actor.
+            path: Final sequence of time-stamped elements to lock down.
+        """
         for location, time in path:
             if isinstance(location, Node):
                 self.state.reserve_node(location, time, drone_id)
@@ -123,23 +209,44 @@ class PathFinder:
                 self.state.reserve_connection(location, time, drone_id)
 
     def _heuristic(self, node: Node) -> int:
+        """Provide perfect lookahead estimates using backward distances.
+
+        Args:
+            node: Targeted station node evaluated for cost analysis.
+
+        Returns:
+            Minimum steps required to transition towards terminus anchor.
+        """
         return self.true_dist[node]
 
     def find_path(self) -> Path:
+        """Execute a Space-Time A* search to calculate non-conflicting paths.
+
+        Returns:
+            A calculated list of time-stamped spatial movements, or an empty
+            list if all branches evaluate to blockages.
+        """
         counter: itertools.count[int] = itertools.count()
 
         start_g = 0.0
         start_h = self._heuristic(self.map.start_hub)
 
         open_set: list[tuple[float, int, float, int, Node, Path]] = [
-            (start_g + start_h, next(counter),
-             start_g, 0, self.map.start_hub, [])
+            (
+                start_g + start_h,
+                next(counter),
+                start_g,
+                0,
+                self.map.start_hub,
+                [],
+            )
         ]
         visited: set[tuple[Node, int]] = set()
 
         while open_set:
             _, _, g_score, current_time, current_node, path = heapq.heappop(
-                open_set)
+                open_set
+            )
 
             if current_node == self.map.end_hub:
                 return path
@@ -149,7 +256,7 @@ class PathFinder:
                 continue
             visited.add(state_key)
 
-            # --- OPTION 1 : Wait ---
+            # --- OPTION 1 : Wait in place ---
             next_time = current_time + 1
             if self.state.can_enter_node(current_node, next_time):
                 new_path = path + [(current_node, next_time)]
@@ -157,11 +264,17 @@ class PathFinder:
                 new_f = new_g + self._heuristic(current_node)
                 heapq.heappush(
                     open_set,
-                    (new_f, next(counter), new_g,
-                     next_time, current_node, new_path),
+                    (
+                        new_f,
+                        next(counter),
+                        new_g,
+                        next_time,
+                        current_node,
+                        new_path,
+                    ),
                 )
 
-            # --- OPTION 2 : Move to a neighbor hub ---
+            # --- OPTION 2 : Transition towards a neighbor hub ---
             for conn in self.map.connections:
                 dest_node = None
                 if conn.node1 == current_node:
@@ -174,42 +287,40 @@ class PathFinder:
                 if dest_node.metadata.zone == Zone.BLOCKED:
                     continue
 
-                # Cost
+                # Evaluate movement weight adjustments based on zone metadata
                 cost: float = 1.0
-                is_restricted: bool = False
+                is_restricted = False
                 priority_bonus: float = 0.0
 
                 if dest_node.metadata.zone == Zone.RESTRICTED:
                     cost = 2.0
                     is_restricted = True
                 elif dest_node.metadata.zone == Zone.PRIORITY:
-                    priority_bonus = 0.5  # Add a bonus if it's a priority Zone
+                    priority_bonus = 0.5
 
                 if is_restricted:
-                    # Wait 2 turn if the zone is restricted
                     arrival_time = current_time + 2
                     can_use_link = self.state.can_use_connection(
                         conn, current_time + 1
-                    ) and self.state.can_use_connection(conn,
-                                                        current_time + 2)
+                    ) and self.state.can_use_connection(conn, current_time + 2)
                     connection_steps = [
                         (conn, current_time + 1),
                         (conn, current_time + 2),
                     ]
                 else:
-                    # add one to the cost
                     arrival_time = current_time + 1
                     can_use_link = self.state.can_use_connection(
-                        conn,
-                        current_time + 1)
+                        conn, current_time + 1
+                    )
                     connection_steps = [(conn, current_time + 1)]
 
-                # Check if the connection and the hub are available
+                # Enforce link and node constraints simultaneously
                 if can_use_link and self.state.can_enter_node(
-                        dest_node,
-                        arrival_time):
-                    new_path = path + connection_steps + [(dest_node,
-                                                           arrival_time)]
+                    dest_node, arrival_time
+                ):
+                    new_path = (
+                        path + connection_steps + [(dest_node, arrival_time)]
+                    )
                     new_g = g_score + cost
                     new_f = new_g + self._heuristic(dest_node) - priority_bonus
                     heapq.heappush(
@@ -228,27 +339,29 @@ class PathFinder:
 
 
 class Simulator:
-    """Simulation orchestrator"""
+    """Simulation orchestrator coordinating state advancements and logs."""
 
     def __init__(self, map_data: Map) -> None:
+        """Initialize pipelines, generate schedules, and audit capabilities.
+
+        Args:
+            map_data: Main parsed model schema tracking map details.
+        """
         self.map = map_data
         self.total = self.map.nb_drones
         self.delivered = 0
         self.failed = 0
         self.turn = 0
 
-        # Delegate pathfinding and reservation logic
-        # to the new object-based PathFinder
         self.path_finder = PathFinder(self.map)
         self.path_finder.route_all_drones()
 
-        # O(1) lookup dictionary: schedule[drone_id][time] = location
+        # Compile time-to-location mappings to achieve O(1) performance lookups
         self.drone_schedules: Dict[int, Dict[int, Node | Connection]] = {}
         for drone_id, path in self.path_finder.drones_paths.items():
             self.drone_schedules[drone_id] = {time: loc for loc, time in path}
 
-        # Drones with no path are marked as
-        # failed so simulation can terminate cleanly.
+        # Track unrouted items as immediate execution exceptions
         self.failed_drones: Set[int] = {
             drone_id
             for drone_id in range(1, self.total + 1)
@@ -256,27 +369,23 @@ class Simulator:
         }
         self.failed = len(self.failed_drones)
 
-        # Track state metrics
         self.current_locations: Dict[int, Node | Connection] = {
             i: self.map.start_hub for i in range(1, self.total + 1)
         }
         self.is_delivered: Set[int] = set()
 
-        # Public runtime view expected by the UI
         self.drone_positions: Dict[int, Node | Connection] = dict(
             self.current_locations
         )
         self.in_transit: List[Dict[str, object]] = []
 
-        # Initialize runtime state for turn 0
         self.update_runtime_state()
 
     def step(self) -> Tuple[bool, List[str]]:
-        """Perform one simulation turn by reading the pre-calculated paths.
+        """Advance the environment clock by one discrete turn slice.
 
-        Returns (is_finished, moves) where moves
-        is a list of strings describing each drone's move.
-        Format: "<drone_id>-<hub_name>" or "<drone_id>-<from>-<to>"
+        Returns:
+            A tuple tracking completion flags and output move log string items.
         """
         if self.delivered + self.failed >= self.total:
             return True, []
@@ -284,21 +393,19 @@ class Simulator:
         moves: List[str] = []
 
         for drone_id in range(1, self.total + 1):
-            if drone_id in self.is_delivered or drone_id in self.failed_drones:
+            if (
+                drone_id in self.is_delivered
+                or drone_id in self.failed_drones
+            ):
                 continue
 
             schedule = self.drone_schedules.get(drone_id, {})
             current_step_loc = schedule.get(self.turn)
 
-            # If there is no action this turn,
-            # the drone has either finished or is waiting.
             if current_step_loc is None:
                 continue
 
-            # Only log an output string if the drone changes state/location
             if current_step_loc != self.current_locations[drone_id]:
-
-                # Handling Node Arrivals
                 if isinstance(current_step_loc, Node):
                     moves.append(f"D{drone_id}-{current_step_loc.name}")
 
@@ -306,7 +413,6 @@ class Simulator:
                         self.delivered += 1
                         self.is_delivered.add(drone_id)
 
-                # Handling Connection Transit Start
                 elif isinstance(current_step_loc, Connection):
                     prev_loc = self.current_locations[drone_id]
                     if isinstance(prev_loc, Node):
@@ -321,23 +427,13 @@ class Simulator:
                 self.current_locations[drone_id] = current_step_loc
 
         self.turn += 1
-        # Update public runtime views after the turn advances
         self.update_runtime_state()
         is_finished = (self.delivered + self.failed) >= self.total
 
         return is_finished, moves
 
     def update_runtime_state(self) -> None:
-        """Update `drone_positions` and
-        `in_transit` based on the current `turn`.
-
-        - `drone_positions[drone_id]` is the location
-            (Node or Connection) at `self.turn` if
-          scheduled, otherwise the last known `current_locations`.
-        - `in_transit` is a list of dicts:
-            {'drone_id': int, 'conn': (hub1_name, hub2_name)}
-          for drones whose scheduled location at `self.turn` is a `Connection`.
-        """
+        """Synchronize runtime cache variables with the current time step."""
         self.drone_positions = {}
         self.in_transit = []
 
@@ -345,7 +441,9 @@ class Simulator:
             schedule = self.drone_schedules.get(drone_id, {})
             loc = schedule.get(self.turn)
             if loc is None:
-                loc = self.current_locations.get(drone_id, self.map.start_hub)
+                loc = self.current_locations.get(
+                    drone_id, self.map.start_hub
+                )
 
             self.drone_positions[drone_id] = loc
 

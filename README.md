@@ -160,3 +160,4 @@ AI was used in the following parts of this project:
 - **Debugging mypy import errors** — diagnosing the `import-not-found` errors caused by mypy not knowing `src/` was the package root, and identifying the correct `pyproject.toml` configuration fix (`mypy_path = "src"`, `explicit_package_bases = true`)
 - **README writing** — structuring and drafting this README to meet the 42 curriculum requirements
 - **Drawing** — Visual aspect of the simulation
+- **Docstrings** — Ruff complient docstrings
