@@ -68,9 +68,7 @@ The graphical interface enhances the user experience in several ways:
 
 - **Camera pan & zoom** — click-drag to pan the view, scroll wheel to zoom in/out, letting you explore large networks comfortably
 - **Hub labels** — each hub renders its name above its node circle, making the graph readable at a glance
-- **Directed connection arrows** — connections are drawn as arrows indicating travel direction
-- **Animated objects** — moving entities are rendered as distinct shapes that travel along connection lines, visually conveying real-time simulation progress
-- **Color coding** — hubs, connections, and objects use distinct colors to differentiate entities at a glance
+- **Connection** — connections are drawn as lines
 
 These choices keep the simulation legible even for dense maps with many overlapping connections.
 
