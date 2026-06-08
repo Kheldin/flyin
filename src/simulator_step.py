@@ -228,9 +228,12 @@ class PathFinder:
         """
         counter: itertools.count[int] = itertools.count()
 
+        # Starting Cost
         start_g = 0.0
+        # Estimated cost since the beginning
         start_h = self._heuristic(self.map.start_hub)
 
+        # F Score, Counter value, G Score, Actual Time, Actual Node, Path
         open_set: list[tuple[float, int, float, int, Node, Path]] = [
             (
                 start_g + start_h,
