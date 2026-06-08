@@ -31,12 +31,14 @@ FPS: int = 60
 BG_COLOR: tuple[int, int, int] = (13, 17, 23)
 
 
-def game_loop(initial_map: Map) -> None:
+def game_loop(initial_map: Map, show_capacity: bool = False) -> None:
     """Execute the core lifecycle loop of the application.
 
     Args:
         initial_map: Immutable template configuration representing the original
             unaltered world data layout.
+        show_capacity: If True, prints diagnostics about zones and connections
+            capacities to the terminal on each step.
     """
     screen = pg.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pg.RESIZABLE)
     pg.display.set_caption("FlyIn")
@@ -131,6 +133,31 @@ def game_loop(initial_map: Map) -> None:
                     is_finished, moves = sim.step()
                     if moves:
                         print(" ".join(moves))
+
+                    # --- Output Capacity Log Metrics ---
+                    if show_capacity:
+                        print(f"\n--- Turn {sim.turn} Capacity Usage ---")
+                        # 1. Evaluate Hub nodes capacity metrics
+                        for hub in map_.hubs:
+                            max_z = hub.metadata.max_drones if hub.metadata.max_drones else 1
+                            current_z = sum(
+                                1 for pos in sim.drone_positions.values()
+                                if isinstance(pos, Node) and pos.name == hub.name
+                            )
+                            print(f"Zone {hub.name}: {current_z}/{max_z} drones")
+
+                        # 2. Evaluate Link paths capacity metrics
+                        for conn in map_.connections:
+                            max_c = conn.metadata.max_link_capacity if conn.metadata.max_link_capacity else 1
+                            current_c = sum(
+                                1 for pos in sim.drone_positions.values()
+                                if pos == conn
+                            )
+                            print(
+                                f"Connection {conn.node1.name}-{conn.node2.name}: "
+                                f"{current_c}/{max_c} capacity used"
+                            )
+                        print("-" * 40)
 
                     # Print analytics upon reaching the termination conditions
                     if is_finished and not sim_finished_printed:

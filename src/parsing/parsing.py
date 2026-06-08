@@ -1,14 +1,11 @@
 """Main map configuration file compilation and tokenization dispatcher.
 
-Provides logical processing sequences to
-stream text configuration structures,
-intercept early validation faults,and build instantiation models.
+Provides logical processing sequences to stream text configuration structures,
+intercept early validation faults, and build instantiation models.
 """
 
-import sys
-
 from models.map import Connection, Map, Metadata, Node
-from parsing.errors import ArgumentError, ConnectionParsingError, ParsingError
+from parsing.errors import ConnectionParsingError, ParsingError
 from parsing.parse_connection import (
     check_connections_hubs,
     ensure_no_duplicate_connection,
@@ -18,8 +15,7 @@ from parsing.parse_hub import ensure_no_duplicate_hub, parse_hub
 
 
 def parse_nb_drones(line: str, line_nb: int) -> int:
-    """Extract and validate the volume
-    count integer from raw drone data records.
+    """Extract and validate the volume count integer from raw drone data records.
 
     Args:
         line: The raw structural character stream containing drone counts.
@@ -29,8 +25,7 @@ def parse_nb_drones(line: str, line_nb: int) -> int:
         The validated integer tracking cumulative system actors.
 
     Raises:
-        ParsingError:
-            If actor count constraints evaluate to non-positive spans.
+        ParsingError: If actor count constraints evaluate to non-positive spans.
     """
     line = line.replace(" ", "")
     nb_drones = int(line.split(":")[1])
@@ -39,26 +34,24 @@ def parse_nb_drones(line: str, line_nb: int) -> int:
     return int(line.split(":")[1])
 
 
-def parse_file() -> Map:
+def parse_file(file_path: str) -> Map:
     """Parse runtime input layout text maps into structured environment models.
 
     Reads file targets passed from arguments, screens individual components
     sequentially, and validates identity and structural network bounds.
 
+    Args:
+        file_path: The path to the custom plaintext map configuration file.
+
     Returns:
         The fully populated Map instance representing the complete network.
 
     Raises:
-        ArgumentError: If CLI configuration parameters carry invalid profiles.
         ParsingError: If entry structures, duplicated anchors, schema flows,
             or root destination hubs fail consistency checks.
-        ConnectionParsingError:
-            If link paths reference unresolved node objects.
+        ConnectionParsingError: If link paths reference unresolved node objects.
     """
-    if len(sys.argv) != 2:
-        raise ArgumentError("Only one arg required: Path of the map")
-
-    with open(sys.argv[1]) as f:
+    with open(file_path) as f:
         file_content = f.read().splitlines()
 
     hubs: list[Node] = []
