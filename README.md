@@ -25,11 +25,19 @@ Given a map file describing an aerial network of hubs and connections, the progr
 
 ---
 
-## Algorithm Choices & Implementation Strategy
+## Algorithm explanation and Choices & Implementation Strategy
 
 ### Graph Model (`models/map.py`)
 
 The map is represented as a directed graph. Hubs are nodes with a name and 2D position; connections are directed edges with a capacity and travel time. The model is kept pure (no rendering logic), making it easy to test and reuse.
+
+### Routing & Collision Avoidance Strategy (`src/simulator_step.py` & `src/models/`)
+
+To prevent entities from overlapping and violating graph capacities, the project implements a **Space-Time Cooperative Pathfinding** approach combined with an isolated reservation ledger:
+
+1. **Perfect Heuristic (Backward Dijkstra):** Before routing individual entities, a reverse Dijkstra traversal is computed backward from the `end_hub` across the entire map. This populates a static lookup table with the exact topological distance remaining to the destination from any given node, ensuring an optimal, Cul-de-sac-free lookahead for the pathfinder.
+2. **Space-Time A\* Search (4D Routing):** Paths are evaluated in a four-dimensional continuum `(Node/Connection, Time)`. At each discrete step, an entity evaluates two scenarios: moving to an adjacent unblocked hub or waiting in place to let traffic pass. The search honors zone specificities, doubling the traversal time inside `RESTRICTED` tracks, while favoring `PRIORITY` paths through heuristic bonuses.
+3. **Sequential Reservation Ledger:** Once a non-conflicting path is found for an entity, its full timeline is locked into a global space-time reservation register. For subsequent entities, these locked windows act as dynamic, impassable obstacles. This multi-agent decomposition avoids exponential computational explosions $\mathcal{O}(V^D)$ and maintains a polynomial runtime, allowing hundreds of entities to synchronize smoothly in real-time.
 
 ### Parsing (`parsing/`)
 
