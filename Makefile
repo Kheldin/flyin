@@ -16,7 +16,7 @@ endif
 
 debug:
 	@echo "Running in debug mode..."
-	uv run python main.py
+	uv run python -m pdb src/main.py $(MAP)
 
 clean:
 	@echo "Cleaning temporary files..."

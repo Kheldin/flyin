@@ -31,7 +31,7 @@ FPS: int = 60
 BG_COLOR: tuple[int, int, int] = (13, 17, 23)
 
 
-def game_loop(initial_map: Map, show_capacity: bool = False) -> None:
+def game_loop(initial_map: Map, debug_logs: bool = False) -> None:
     """Execute the core lifecycle loop of the application.
 
     Args:
@@ -134,8 +134,8 @@ def game_loop(initial_map: Map, show_capacity: bool = False) -> None:
                     if moves:
                         print(" ".join(moves))
 
-                    # --- Output Capacity Log Metrics ---
-                    if show_capacity:
+                    # --- Output Capacity Log Metrics for debugging ---
+                    if debug_logs:
                         print(f"\n--- Turn {sim.turn} Capacity Usage ---")
                         # 1. Evaluate Hub nodes capacity metrics
                         for hub in map_.hubs:
