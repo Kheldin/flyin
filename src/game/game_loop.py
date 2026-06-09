@@ -139,22 +139,34 @@ def game_loop(initial_map: Map, debug_logs: bool = False) -> None:
                         print(f"\n--- Turn {sim.turn} Capacity Usage ---")
                         # 1. Evaluate Hub nodes capacity metrics
                         for hub in map_.hubs:
-                            max_z = hub.metadata.max_drones if hub.metadata.max_drones else 1
-                            current_z = sum(
-                                1 for pos in sim.drone_positions.values()
-                                if isinstance(pos, Node) and pos.name == hub.name
+                            max_z = (
+                                hub.metadata.max_drones
+                                if hub.metadata.max_drones
+                                else 1
                             )
-                            print(f"Zone {hub.name}: {current_z}/{max_z} drones")
+                            current_z = sum(
+                                1
+                                for pos in sim.drone_positions.values()
+                                if isinstance(pos, Node)
+                                and pos.name == hub.name
+                            )
+                            print(f"Zone {hub.name}: "
+                                  f"{current_z}/{max_z} drones")
 
                         # 2. Evaluate Link paths capacity metrics
                         for conn in map_.connections:
-                            max_c = conn.metadata.max_link_capacity if conn.metadata.max_link_capacity else 1
+                            max_c = (
+                                conn.metadata.max_link_capacity
+                                if conn.metadata.max_link_capacity
+                                else 1
+                            )
                             current_c = sum(
                                 1 for pos in sim.drone_positions.values()
                                 if pos == conn
                             )
                             print(
-                                f"Connection {conn.node1.name}-{conn.node2.name}: "
+                                f"Connection {conn.node1.name}-"
+                                f"{conn.node2.name}: "
                                 f"{current_c}/{max_c} capacity used"
                             )
                         print("-" * 40)
@@ -190,9 +202,9 @@ def game_loop(initial_map: Map, debug_logs: bool = False) -> None:
         drones_on_connections: dict[tuple[str, str], list[int]] = {}
         for in_transit_entry in sim.in_transit:
             drone_id = in_transit_entry.get("drone_id")
-            conn = in_transit_entry.get("conn")
-            if drone_id and conn:
-                key: tuple[str, str] = tuple(sorted(conn))  # type: ignore
+            con = in_transit_entry.get("conn")
+            if drone_id and con:
+                key: tuple[str, str] = tuple(sorted(con))  # type: ignore
                 if key not in drones_on_connections:
                     drones_on_connections[key] = []
                 if isinstance(drone_id, int):
@@ -204,9 +216,9 @@ def game_loop(initial_map: Map, debug_logs: bool = False) -> None:
             pos = screen_positions.get(name)
             if pos is not None:
                 count = drone_count_per_hub.get(name, 0)
-                sprite.setup(
-                    sprite.hub, pos, size=size_with_zoom, drone_count=count
-                )
+                sprite.setup(sprite.hub, pos,
+                             size=size_with_zoom,
+                             drone_count=count)
 
         hub_sprites.update()
 

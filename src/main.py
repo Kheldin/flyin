@@ -18,29 +18,19 @@ from parsing.parsing import parse_file  # noqa: E402
 
 
 if __name__ == "__main__":
-    from parsing.parsing import parse_file
 
     # ArgParse init
-    parser = argparse.ArgumentParser(description="FlyIn — Multi-Agent Space-Time Drone Simulation Visualizer")
-    parser.add_argument("map_file", help="Path to the custom plaintext map file")
-    # parser.add_argument(
-    #     "--capacity-info", 
-    #     action="store_true", 
-    #     help="Display capacity utilization diagnostics for zones and links at every turn"
-    # )
-    parser.add_argument(
-        "--capacity-info",
-        action="store_true"
-    )
+    parser = argparse.ArgumentParser(
+        description="Multi-Agent Space-Time Drone Simulation Visualizer")
+    parser.add_argument("map_file",
+                        help="Path to the custom plaintext map file")
 
     args = parser.parse_args()
-    
     try:
         loaded_map = parse_file(args.map_file)
     except Exception as error:
         print(f"Error parsing map: {error}", file=sys.stderr)
         sys.exit(1)
-        
     pg.init()
     try:
         game_loop(loaded_map, debug_logs=args.capacity_info)

@@ -15,7 +15,8 @@ from parsing.parse_hub import ensure_no_duplicate_hub, parse_hub
 
 
 def parse_nb_drones(line: str, line_nb: int) -> int:
-    """Extract and validate the volume count integer from raw drone data records.
+    """Extract and validate the volume count
+    integer from raw drone data records.
 
     Args:
         line: The raw structural character stream containing drone counts.
@@ -25,7 +26,8 @@ def parse_nb_drones(line: str, line_nb: int) -> int:
         The validated integer tracking cumulative system actors.
 
     Raises:
-        ParsingError: If actor count constraints evaluate to non-positive spans.
+        ParsingError: If actor count constraints
+        evaluate to non-positive spans.
     """
     line = line.replace(" ", "")
     nb_drones = int(line.split(":")[1])
@@ -49,7 +51,8 @@ def parse_file(file_path: str) -> Map:
     Raises:
         ParsingError: If entry structures, duplicated anchors, schema flows,
             or root destination hubs fail consistency checks.
-        ConnectionParsingError: If link paths reference unresolved node objects.
+        ConnectionParsingError:
+            If link paths reference unresolved node objects.
     """
     with open(file_path) as f:
         file_content = f.read().splitlines()
