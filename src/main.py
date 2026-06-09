@@ -33,7 +33,7 @@ if __name__ == "__main__":
         sys.exit(1)
     pg.init()
     try:
-        game_loop(loaded_map, debug_logs=args.capacity_info)
+        game_loop(loaded_map, False)
     except KeyboardInterrupt:
         print("\nSimulation aborted by user.", end="")
     finally:
