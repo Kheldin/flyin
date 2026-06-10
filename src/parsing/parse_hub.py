@@ -77,6 +77,8 @@ def parse_hub(line: str, line_nb: int, start: bool, end: bool) -> Node:
             if key == "zone":
                 try:
                     zone = Zone.get_zone(meta_data["zone"])
+                    if not zone:
+                        raise Exception
                 except Exception:
                     valid = ["normal", "restricted", "priority", "blocked"]
                     raise ParsingError(
