@@ -36,5 +36,7 @@ if __name__ == "__main__":
         game_loop(loaded_map, False)
     except KeyboardInterrupt:
         print("\nSimulation aborted by user.", end="")
+    except Exception as e:
+        print(e)
     finally:
         pg.quit()
