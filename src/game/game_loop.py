@@ -17,7 +17,6 @@ from game.draw import (
     draw_auras,
     draw_connections,
     draw_drone_on_connections,
-    draw_grid,
     draw_hub_labels,
     scale_value,
 )
@@ -28,7 +27,7 @@ from simulator_step import Simulator
 SCREEN_WIDTH: int = 1920
 SCREEN_HEIGHT: int = 1080
 FPS: int = 60
-BG_COLOR: tuple[int, int, int] = (13, 17, 23)
+BG_COLOR: tuple[int, int, int] = (200, 210, 220)
 
 
 def game_loop(initial_map: Map, debug_logs: bool = False) -> None:
@@ -45,7 +44,7 @@ def game_loop(initial_map: Map, debug_logs: bool = False) -> None:
     clock = pg.time.Clock()
 
     # Simulation step interval and accumulator parameters
-    sim_tick = 0.5
+    sim_tick = 0.8
     sim_acc = 0.0
     sim_paused: bool = True
 
@@ -224,7 +223,6 @@ def game_loop(initial_map: Map, debug_logs: bool = False) -> None:
 
         # Render graphics components sequentially to ensure layered display
         screen.fill(BG_COLOR)
-        draw_grid(screen)
         draw_connections(screen, map_, screen_positions, camera.zoom)
         draw_auras(screen, hub_by_name)
         hub_sprites.draw(screen)
