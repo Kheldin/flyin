@@ -6,6 +6,21 @@ A map-based flight simulation visualizer written in Python. The program parses a
 
 ---
 
+### Example visual output
+
+![Example visual Output](flyin.jpg)
+
+### Map Configuration Example
+
+Below, a map file example with all data needed to use the program:
+
+![Map Configuration Syntax](input.png)
+
+
+### Example textual output
+
+![Example textual output](output.png)
+
 ## Description
 
 **flyin** is a 2D simulation and visualization project built as part of the 42 school curriculum. It models a directed graph of **hubs** (nodes) connected by **routes** (edges), simulates the movement of objects along those routes, and renders the whole system in an interactive graphical window.
